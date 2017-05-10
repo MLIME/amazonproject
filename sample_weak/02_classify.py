@@ -1,7 +1,10 @@
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
+import os
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import GridSearchCV
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import SVC, LinearSVC
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
@@ -9,7 +12,7 @@ from sklearn.metrics import accuracy_score
 
 np.random.seed(777)
 
-image_base_size = 96
+image_base_size = 28
 
 label_file_name = 'train.csv'
 label_file = pd.read_csv(label_file_name)
@@ -20,6 +23,7 @@ labels = vec.fit_transform(label_file['tags'])
 
 X_train = np.load('X_train.npy')
 y_train = np.load('y_train.npy')
+X_test = np.load('X_test.npy')
 
 num_categories = y_train.shape[1]
 
@@ -29,8 +33,8 @@ def get_labels(y):
     return np.array(vec.inverse_transform(y))
 
 
-X_train = X_train.reshape(len(X_train), image_base_size*image_base_size)
-X_test = X_test.reshape(len(X_test), image_base_size*image_base_size)
+X_train = X_train.reshape(len(X_train), image_base_size*image_base_size*4)
+X_test = X_test.reshape(len(X_test), image_base_size*image_base_size*4)
 
 pca = PCA()
 X_train_pca = pca.fit_transform(X_train)
@@ -43,10 +47,10 @@ rsvm = SVC(C = 1.0, kernel = 'rbf', probability=True)
 psvm = SVC(C = 1.0, kernel = 'poly', degree=3, probability=True)
 lsvm = LinearSVC(C = 1.0, loss='hinge')
 rf = RandomForestClassifier()
-xgb = XGBClassifier()
+#xgb = XGBClassifier()
 
 param_grid_svm = [{'C': [0.01, 0.1, 1.0]}]
-param_grid_rf = [{'n_estimators': [100, 200, 400], 'max_features': [200, 400]}]
+param_grid_rf = [{'n_estimators': [100, 200, 400], 'max_features': [25, 50, 100, 128]}]
 
 grid_rf = GridSearchCV(rf, param_grid_rf, cv = 5, scoring = 'neg_mean_squared_error')
 grid_rf.fit(X_train_pca[:,0:num_pcs], y_train)
@@ -68,8 +72,8 @@ vc = VotingClassifier(estimators = [
 	('linear_svm', grid_lsvm.best_estimator_),
 	('radial_svm', grid_rsvm.best_estimator_),
     ('poly_svm', grid_psvm.best_estimator_),
-	('xgb', xgb),
-	('rf', grid_rf.best_estimator_),
+#	('xgb', xgb),
+	('rf', grid_rf.best_estimator_)],
 	voting='soft')
 
 vc.fit(X_train_pca[:,0:num_pcs], y_train)
@@ -97,7 +101,6 @@ label_file['pred_labels'] = pred_labels_list
 
 label_file.to_csv('train_result.csv')
 
-X_test = np.load('X_test.npy')
 test_img_names = pd.read_csv('test_img_names.csv')
 
 print('Predicting on test data')
