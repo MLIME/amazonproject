@@ -69,7 +69,7 @@ vc = VotingClassifier(estimators = [
 	('radial_svm', grid_rsvm.best_estimator_),
     ('poly_svm', grid_psvm.best_estimator_),
 	('xgb', xgb),
-	('rf', grid_rf.best_estimator_),
+	('rf', grid_rf.best_estimator_)],
 	voting='soft')
 
 vc.fit(X_train_pca[:,0:num_pcs], y_train)
