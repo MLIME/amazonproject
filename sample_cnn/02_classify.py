@@ -132,12 +132,22 @@ label_file.to_csv('train_result.csv')
 X_test = np.load('X_test.npy')
 test_img_names = pd.read_csv('test_img_names.csv')
 
-n = 50
-
 print('Predicting on test data')
-y_pred = final_model.predict_proba(X_test[0:n,:])
+y_pred = final_model.predict_proba(X_test)
 pred_labels = get_labels(y_pred)
 
-for i in range(n):
-    print(test_img_names['image_name'][i] + ': ' + ','.join(pred_labels[i]))
+submission_file = open('submission.csv', 'w')
+submission_file.write('id,image_name,tags\n')
 
+for i in range(n):
+    id_file = test_img_names['image_name'][i].split('_')[1]
+    s = id_file + ',' + test_img_names['image_name'][i] + ',' + ' '.join(pred_labels[i])
+    print(s)
+    submission_file.write(s)
+    submission_file.write('\n')
+
+submission_file.close()
+
+submission_data = pd.read_csv('submission.csv')
+submission_data = submission_data.sort_values('id').drop('id', 1)
+submission_data.to_csv('submission.csv')
