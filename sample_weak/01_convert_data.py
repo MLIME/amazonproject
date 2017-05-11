@@ -10,7 +10,7 @@ from skimage.io import ImageCollection
 from sklearn.feature_extraction.text import CountVectorizer
 from glob import glob
 
-BASE_DIR = './'
+BASE_DIR = './Data'
 
 image_base_size = 28
 

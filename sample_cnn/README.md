@@ -3,7 +3,7 @@
 **Beware of alpha-stage code**
 
 * 01_convert_data.py
-Script to convert the image files into numpy arrays. You must copy the "test-jpg" and "train-jpg" folders into the current directory before running.
+Script to convert the image files into numpy arrays. You must copy the "test-jpg" and "train-jpg" folders into the directory Data before running (a script for doing so will be provided soon !!).
 
 The variable "image_base_size" determines the size of the image to be used by the CNN, as an int value. Original image size is 256x256, and the script uses 96x96 by default to overcome OOM problems when using the GPU.
 
