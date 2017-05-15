@@ -200,3 +200,16 @@ def create_jpg_data(image_base_size=28):
     dict_file = {'X_train': X_train, 'y_train': y_train, 'X_test': X_test}
     pickle.dump(dict_file, file)
     file.close()
+
+
+def get_batch(data, labels, batch_size):
+    """
+    Given one dataset data and an array of labels label,
+    this function returns a batch of size batch_size
+    :type data: np array
+    :type labels: np array
+    :type batch_size: int
+    :rtype: tuple of np arrays
+    """
+    random_indices = np.random.randint(data.shape[0], size=batch_size)
+    return data[random_indices], labels[random_indices]

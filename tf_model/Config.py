@@ -1,3 +1,6 @@
+from util import get_log_path
+
+
 class Config():
     """
     Class to hold all model hyperparams.
@@ -19,7 +22,8 @@ class Config():
                  dropout=0.75,
                  mean=0,
                  std=0.1,
-                 tunning=False):
+                 tunning=False,
+                 log_path=None):
         """
         :type batch_size: int
         :type patch_size: int
@@ -55,3 +59,7 @@ class Config():
         self.mean = mean
         self.std = std
         self.tunning = tunning
+        if log_path is None:
+            self.log_path = get_log_path()
+        else:
+            self.log_path = log_path

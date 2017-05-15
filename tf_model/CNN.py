@@ -3,7 +3,7 @@ import tensorflow as tf
 import time
 import os
 from datetime import datetime, timedelta
-from util import get_log_path, timeit
+from util import timeit
 from DataHolder import DataHolder
 from Config import Config
 from tf_functions import apply_conv, apply_pooling, linear_activation, gd_train, init_wb
@@ -19,7 +19,7 @@ class CNNModel:
         :type config: Config
         :type dataholder: DataHolder
         """
-        self.path = get_log_path()
+        self.path = config.log_path
         self.config = config
         self.test_labels = dataholder.test_labels
         self.valid_dataset = dataholder.valid_dataset
@@ -145,7 +145,7 @@ class CNNModel:
                                              self.std,
                                              self.random_seed)
             linear = linear_activation(hidden_layer_1, self.hidden_layer_2_wb)
-            hidden_layer_2 = tf.sigmoid(linear)
+            hidden_layer_2 = tf.nn.relu(linear)
         with tf.variable_scope('Hidden_Layer_3', reuse=Reuse):
             shape5 = [self.hidden_nodes_2, self.hidden_nodes_3]
             self.hidden_layer_3_wb = init_wb(shape5,
@@ -154,7 +154,7 @@ class CNNModel:
                                              self.std,
                                              self.random_seed)
             linear = linear_activation(hidden_layer_2, self.hidden_layer_3_wb)
-            hidden_layer_3 = tf.sigmoid(linear)
+            hidden_layer_3 = tf.nn.relu(linear)
         with tf.variable_scope('Output_Layer', reuse=Reuse):
             shape6 = [self.hidden_nodes_3, self.num_labels]
             self.hidden_layer_4_wb = init_wb(shape6,
@@ -188,7 +188,7 @@ class CNNModel:
         Method to create the loss function of the graph
         """
         with tf.name_scope("loss"):
-            soft = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits,
+            soft = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.logits,
                                                                   labels=self.input_labels)
             self.loss = tf.reduce_mean(soft)
             tf.summary.scalar(self.loss.op.name, self.loss)
@@ -198,7 +198,7 @@ class CNNModel:
         Method to create the optimizer of the graph
         """
         with tf.name_scope("optimizer"):
-            opt = tf.train.GradientDescentOptimizer(self.learning_rate)
+            opt = tf.train.AdagradOptimizer(self.learning_rate)
             self.optimizer = opt.minimize(self.loss)
 
     def create_optimizer_decay(self):
