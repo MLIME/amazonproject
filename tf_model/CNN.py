@@ -12,6 +12,7 @@ from tf_functions import apply_conv, apply_pooling, linear_activation, gd_train,
 class CNNModel:
     """
     CNN model. Architecture: conv-pull-conv-pull-fc
+    This model is set for multilabel classification
     """
 
     def __init__(self, config, dataholder):
@@ -81,8 +82,10 @@ class CNNModel:
         """
         self.TestDataset = tf.constant(self.test_dataset, name='test_data')
         self.TestLabels = tf.constant(self.test_labels, name='test_labels')
+        self.TestLabels = tf.cast(self.TestLabels, 'float')
         self.ValidDataset = tf.constant(self.valid_dataset, name='valid_data')
         self.ValidLabels = tf.constant(self.valid_labels, name='valid_labels')
+        self.ValidLabels = tf.cast(self.ValidLabels, 'float')
 
     def create_logits(self, input_tensor, Reuse=None):
         """
@@ -218,21 +221,13 @@ class CNNModel:
         for the test dataset, for the valid dataset and for the
         single image.
         """
-        self.input_prediction = tf.nn.softmax(self.logits,
-                                              name='train_logits')
-        self.input_pred_cls = tf.argmax(self.input_prediction, 1)
-        self.train_labes_cls = tf.argmax(self.input_labels, 1)
-        test_prediction = tf.nn.softmax(self.test_logits,
-                                        name='test_logits')
-        self.test_prediction = tf.argmax(test_prediction, 1)
-        self.test_labes_cls = tf.argmax(self.TestLabels, 1)
-        valid_prediction = tf.nn.softmax(self.valid_logits,
-                                         name='valid_logits')
-        self.valid_prediction = tf.argmax(valid_prediction, 1)
-        self.valid_labes_cls = tf.argmax(self.ValidLabels, 1)
-        one_pic_prediction = tf.nn.softmax(self.one_pic_logits)
-        self.one_pic_prediction_cls = tf.argmax(one_pic_prediction,
-                                                1,
+        self.input_prediction = tf.nn.sigmoid(self.logits,
+                                              name='train_pred')
+        self.test_prediction = tf.nn.sigmoid(self.test_logits,
+                                             name='test_pred')
+        self.valid_prediction = tf.nn.sigmoid(self.valid_logits,
+                                              name='valid_pred')
+        self.one_pic_prediction = tf.nn.sigmoid(self.one_pic_logits,
                                                 name='one_pic_pred')
 
     def create_accuracy(self):
@@ -241,15 +236,15 @@ class CNNModel:
         and the valid.
         """
         with tf.name_scope('accuracy'):
-            correct_pred = tf.equal(self.input_pred_cls,
-                                    self.train_labes_cls)
+            correct_pred = tf.equal(tf.round(self.input_prediction),
+                                    tf.round(self.input_labels))
             self.acc_op = tf.reduce_mean(tf.cast(correct_pred, 'float'))
             tf.summary.scalar(self.acc_op.op.name, self.acc_op)
-            test_comparison = tf.equal(self.test_prediction,
-                                       self.test_labes_cls)
+            test_comparison = tf.equal(tf.round(self.test_prediction),
+                                       tf.round(self.TestLabels))
             self.acc_test = tf.reduce_mean(tf.cast(test_comparison, 'float'))
-            valid_comparison = tf.equal(self.valid_prediction,
-                                        self.valid_labes_cls)
+            valid_comparison = tf.equal(tf.round(self.valid_prediction),
+                                        tf.round(self.ValidLabels))
             self.acc_valid = tf.reduce_mean(tf.cast(valid_comparison, 'float'))
 
     def create_saver(self):
@@ -333,6 +328,7 @@ def train_model(model,
                                                  model.acc_op,
                                                  all_summaries],
                                                 feed_dict=feed_dict)
+
             duration = time.time() - start_time
             summary_writer.add_summary(summary, step)
             summary_writer.flush()
