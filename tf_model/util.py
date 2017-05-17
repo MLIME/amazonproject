@@ -53,6 +53,33 @@ def timeit(index_args=[]):
     return dec
 
 
+def F_beta(prediction, truth, beta=2):
+    """
+    F-score function for any positive real beta, reference:
+    https://en.wikipedia.org/wiki/F1_score
+
+    :type prediction: np array
+    :type truth: np array
+    :type beta: np array
+    :rtype: float
+    """
+    tp = 0
+    fp = 0
+    fn = 0
+    for i in range(len(prediction)):
+        if prediction[i] == truth[i] == 1:
+            tp += 1
+        if prediction[i] > truth[i]:
+            fp += 1
+        if prediction[i] < truth[i]:
+            fn += 1
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    numerator = (1 + beta ** 2) * (precision * recall)
+    denominator = ((beta ** 2) * (precision)) + recall
+    return numerator / denominator
+
+
 def plot9images(images, cls_true, img_shape, cls_pred=None):
     """
     Function to show 9 images with their respective classes.

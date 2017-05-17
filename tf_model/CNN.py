@@ -3,7 +3,7 @@ import tensorflow as tf
 import time
 import os
 from datetime import datetime, timedelta
-from util import timeit
+from util import timeit, F_beta, get_time
 from DataHolder import DataHolder
 from Config import Config
 from tf_functions import apply_conv, apply_pooling, linear_activation, gd_train, init_wb
@@ -60,14 +60,14 @@ class CNNModel:
                                   self.image_size,
                                   self.image_size,
                                   self.num_channels)
-            shape_input_labels = (self.batch_size,
-                                  self.num_labels)
+            input_labels_sha = (self.batch_size,
+                                self.num_labels)
             self.input_tensor = tf.placeholder(tf.float32,
                                                shape=shape_input_tensor,
                                                name="input_tensor")
-            self.input_labels = tf.placeholder(tf.float32,
-                                               shape=shape_input_labels,
-                                               name="input_labels")
+            self.input_labels = tf.round(tf.placeholder(tf.float32,
+                                                        shape=input_labels_sha,
+                                                        name="input_labels"))
             shape_one_pic = (1,
                              self.image_size,
                              self.image_size,
@@ -82,10 +82,10 @@ class CNNModel:
         """
         self.TestDataset = tf.constant(self.test_dataset, name='test_data')
         self.TestLabels = tf.constant(self.test_labels, name='test_labels')
-        self.TestLabels = tf.cast(self.TestLabels, 'float')
+        self.TestLabels = tf.round(tf.cast(self.TestLabels, 'float'))
         self.ValidDataset = tf.constant(self.valid_dataset, name='valid_data')
         self.ValidLabels = tf.constant(self.valid_labels, name='valid_labels')
-        self.ValidLabels = tf.cast(self.ValidLabels, 'float')
+        self.ValidLabels = tf.round(tf.cast(self.ValidLabels, 'float'))
 
     def create_logits(self, input_tensor, Reuse=None):
         """
@@ -221,14 +221,14 @@ class CNNModel:
         for the test dataset, for the valid dataset and for the
         single image.
         """
-        self.input_prediction = tf.nn.sigmoid(self.logits,
-                                              name='train_pred')
-        self.test_prediction = tf.nn.sigmoid(self.test_logits,
-                                             name='test_pred')
-        self.valid_prediction = tf.nn.sigmoid(self.valid_logits,
-                                              name='valid_pred')
-        self.one_pic_prediction = tf.nn.sigmoid(self.one_pic_logits,
-                                                name='one_pic_pred')
+        self.input_prediction = tf.round(tf.nn.sigmoid(self.logits,
+                                                       name='train_pred'))
+        self.test_prediction = tf.round(tf.nn.sigmoid(self.test_logits,
+                                                      name='test_pred'))
+        self.valid_prediction = tf.round(tf.nn.sigmoid(self.valid_logits,
+                                                       name='valid_pred'))
+        self.one_pic_prediction = tf.round(tf.nn.sigmoid(self.one_pic_logits,
+                                                         name='one_pic_pred'))
 
     def create_accuracy(self):
         """
@@ -236,15 +236,15 @@ class CNNModel:
         and the valid.
         """
         with tf.name_scope('accuracy'):
-            correct_pred = tf.equal(tf.round(self.input_prediction),
-                                    tf.round(self.input_labels))
+            correct_pred = tf.equal(self.input_prediction,
+                                    self.input_labels)
             self.acc_op = tf.reduce_mean(tf.cast(correct_pred, 'float'))
             tf.summary.scalar(self.acc_op.op.name, self.acc_op)
-            test_comparison = tf.equal(tf.round(self.test_prediction),
-                                       tf.round(self.TestLabels))
+            test_comparison = tf.equal(self.test_prediction,
+                                       self.TestLabels)
             self.acc_test = tf.reduce_mean(tf.cast(test_comparison, 'float'))
-            valid_comparison = tf.equal(tf.round(self.valid_prediction),
-                                        tf.round(self.ValidLabels))
+            valid_comparison = tf.equal(self.valid_prediction,
+                                        self.ValidLabels)
             self.acc_valid = tf.reduce_mean(tf.cast(valid_comparison, 'float'))
 
     def create_saver(self):
@@ -303,7 +303,7 @@ def train_model(model,
     initial_time = time.time()
     train_dataset = dataholder.train_dataset
     train_labels = dataholder.train_labels
-    best_valid_test = 0
+    best_valid_F2 = 0
     marker = ''
 
     with tf.Session(graph=model.graph) as session:
@@ -312,8 +312,8 @@ def train_model(model,
         tf.global_variables_initializer().run()
         print('Start training')
         print("{}  {}  {}  {}".format("step",
-                                      "batch_acc",
-                                      "valid_acc",
+                                      "batch_F2",
+                                      "valid_F2",
                                       "elapsed_time"))
         for step in range(num_steps):
             offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
@@ -323,26 +323,39 @@ def train_model(model,
                          batch_data,
                          model.input_labels: batch_labels}
             start_time = time.time()
-            _, loss, acc, summary = session.run([model.optimizer,
-                                                 model.loss,
-                                                 model.acc_op,
-                                                 all_summaries],
-                                                feed_dict=feed_dict)
+            _, loss, summary = session.run([model.optimizer,
+                                            model.loss,
+                                            all_summaries],
+                                           feed_dict=feed_dict)
 
             duration = time.time() - start_time
             summary_writer.add_summary(summary, step)
             summary_writer.flush()
 
             if (step % show_step == 0):
-                valid_acc = session.run(model.acc_valid)
-                if valid_acc > best_valid_test:
-                        best_valid_test = valid_acc
+                pred_batch, truth_batch, pred_valid, truth_valid = session.run([model.input_prediction,
+                                                                                model.input_labels,
+                                                                                model.valid_prediction,
+                                                                                model.ValidLabels],
+                                                                               feed_dict=feed_dict)
+                flat = pred_batch.shape[0] * pred_batch.shape[1]
+                pred_batch = pred_batch.reshape(flat)
+                flat = truth_batch.shape[0] * truth_batch.shape[1]
+                truth_batch = truth_batch.reshape(flat)
+                F2_batch = F_beta(pred_batch, truth_batch)
+                flat = pred_valid.shape[0] * pred_valid.shape[1]
+                pred_valid = pred_valid.reshape(flat)
+                flat = truth_valid.shape[0] * truth_valid.shape[1]
+                truth_valid = truth_valid.reshape(flat)
+                F2_valid = F_beta(pred_valid, truth_valid)
+                if F2_valid > best_valid_F2:
+                        best_valid_F2 = F2_valid
                         marker = "*"
                         model.saver.save(sess=session,
                                          save_path=model.save_path)
-                print("{:3d}   {:.2f}%        {:.2f}%{:s}    {:.2f}(s)".format(step,
-                                                                               acc * 100,
-                                                                               valid_acc * 100,
+                print("{:3d}   {:.2f}        {:.2f}{:s}    {:.2f}(s)".format(step,
+                                                                               F2_batch ,
+                                                                               F2_valid,
                                                                                marker,
                                                                                duration))
                 marker = ''
@@ -357,19 +370,6 @@ def train_model(model,
         print("\ntensorboard  --logdir={}\n".format(log_path))
 
 
-def check_test(model):
-    """
-    Function that returns the accuracy of the test dataset.
-
-    :type model: CNNModel
-    :rtype : float
-    """
-    with tf.Session(graph=model.graph) as session:
-                model.saver.restore(sess=session, save_path=model.save_path)
-                acc_test = session.run(model.acc_test)
-    return acc_test
-
-
 def check_valid(model):
     """
     Function that returns the accuracy of the valid dataset.
@@ -379,8 +379,14 @@ def check_valid(model):
     """
     with tf.Session(graph=model.graph) as session:
                 model.saver.restore(sess=session, save_path=model.save_path)
-                acc_valid = session.run(model.acc_valid)
-    return acc_valid
+                pred_valid, truth_valid = session.run([model.valid_prediction,
+                                                       model.ValidLabels])
+    flat = pred_valid.shape[0] * pred_valid.shape[1]
+    pred_valid = pred_valid.reshape(flat)
+    flat = truth_valid.shape[0] * truth_valid.shape[1]
+    truth_valid = truth_valid.reshape(flat)
+    F2_valid = F_beta(pred_valid, truth_valid)
+    return F2_valid
 
 
 def one_prediction(model, input_image):
