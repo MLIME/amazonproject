@@ -22,7 +22,6 @@ class CNNModel:
         """
         self.path = config.log_path
         self.config = config
-        self.test_labels = dataholder.test_labels
         self.valid_dataset = dataholder.valid_dataset
         self.valid_labels = dataholder.valid_labels
         self.test_dataset = dataholder.test_dataset
@@ -81,8 +80,6 @@ class CNNModel:
         Method to create the constants for the graph.
         """
         self.TestDataset = tf.constant(self.test_dataset, name='test_data')
-        self.TestLabels = tf.constant(self.test_labels, name='test_labels')
-        self.TestLabels = tf.round(tf.cast(self.TestLabels, 'float'))
         self.ValidDataset = tf.constant(self.valid_dataset, name='valid_data')
         self.ValidLabels = tf.constant(self.valid_labels, name='valid_labels')
         self.ValidLabels = tf.round(tf.cast(self.ValidLabels, 'float'))
@@ -240,9 +237,6 @@ class CNNModel:
                                     self.input_labels)
             self.acc_op = tf.reduce_mean(tf.cast(correct_pred, 'float'))
             tf.summary.scalar(self.acc_op.op.name, self.acc_op)
-            test_comparison = tf.equal(self.test_prediction,
-                                       self.TestLabels)
-            self.acc_test = tf.reduce_mean(tf.cast(test_comparison, 'float'))
             valid_comparison = tf.equal(self.valid_prediction,
                                         self.ValidLabels)
             self.acc_valid = tf.reduce_mean(tf.cast(valid_comparison, 'float'))
@@ -402,3 +396,16 @@ def one_prediction(model, input_image):
                 result = session.run(model.one_pic_prediction_cls,
                                      feed_dict=feed_dict)
     return result[0]
+
+
+def test_prediction(model):
+    """
+    Function that returns the predicted class of the test dataset.
+
+    :type model: CNNModel
+    :rtype : int
+    """
+    with tf.Session(graph=model.graph) as session:
+                model.saver.restore(sess=session, save_path=model.save_path)
+                result = session.run(model.test_prediction)
+    return result
