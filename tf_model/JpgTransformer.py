@@ -104,16 +104,17 @@ class JpgTransformer:
         vec = d['vec']
         test_img_names = d['test_img_names']
         del d
-        assert len(X_test) == len(predictions)
+        test_size = len(X_test)
+        assert test_size == len(predictions)
         pred_labels = [list(vec.inverse_transform(i)[0]) for i in predictions]
         submission_file = open('submission.csv', 'w')
         submission_file.write('id,image_name,tags\n')
 
-        for i in range(len(X_test)):
+        for i in range(test_size):
             id_file = test_img_names[i].split('_')[1][:-4]
             labels_s = ' '.join(pred_labels[i])
             s = id_file + ',' + "test_" + id_file + ',' + labels_s
-            sys.stdout.write('\r{}'.format(s))
+            sys.stdout.write('\r{} of {}'.format(i + 1, test_size))
             sys.stdout.flush()
             submission_file.write(s)
             submission_file.write('\n')
