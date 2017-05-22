@@ -97,7 +97,7 @@ class JpgTransformer:
         file.close()
 
     def create_submission(self, predictions):
-        with open(self.file_path, 'rb') as s:
+        with open(self.file_name, 'rb') as s:
             d = pickle.load(s)
             pass
         X_test = d['X_test']
@@ -110,8 +110,8 @@ class JpgTransformer:
         submission_file.write('id,image_name,tags\n')
 
         for i in range(len(X_test)):
-            id_file = test_img_names['image_name'][i].split('_')[1]
-            s = id_file + ',' + test_img_names['image_name'][i] + ',' + ' '.join(pred_labels[i])
+            id_file = test_img_names[i].split('_')[1][:-4]
+            s = "test_" + id_file + ',' + ' '.join(pred_labels[i])
             print(s)
             submission_file.write(s)
             submission_file.write('\n')
