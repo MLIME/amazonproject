@@ -111,8 +111,10 @@ class JpgTransformer:
 
         for i in range(len(X_test)):
             id_file = test_img_names[i].split('_')[1][:-4]
-            s = "test_" + id_file + ',' + ' '.join(pred_labels[i])
-            print(s)
+            labels_s = ' '.join(pred_labels[i])
+            s = id_file + ',' + "test_" + id_file + ',' + labels_s
+            sys.stdout.write('\r{}'.format(s))
+            sys.stdout.flush()
             submission_file.write(s)
             submission_file.write('\n')
 
