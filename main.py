@@ -31,31 +31,30 @@ for model in models:
 
 parser = argparse.ArgumentParser(description='Model Explorer')
 
-parser.add_argument('base_dir', type=str,  help='base data directory')
+parser.add_argument('base_dir', type=str,   help='base data directory')
 parser.add_argument('train_dir', type=str,  help='train data directory')
-parser.add_argument('test_dir', type=str,  help='test data directory')
-parser.add_argument('model_name', type=str,  help='model name: ' + '\n'.join(['%s (args: %s)' % (k, v) for k, v in model_args.items()]))
-parser.add_argument('--file_type', type=str,  default='jpg', help='file type: <jpg|tif>')
-parser.add_argument('--label_file', type=str,  default='train.csv', help='label file name')
+parser.add_argument('test_dir', type=str,   help='test data directory')
+parser.add_argument('model_name', type=str, help='model name' + '|'.join(['%s (args: %s)' % (k, v) for k, v in model_args.items()]))
+parser.add_argument('--file_type', default='jpg', help='file type', choices=['jpg', 'tif'])
+parser.add_argument('--labels', default='train.csv', help='label file name')
 parser.add_argument('--img_size', type=int, default=256,  help='image size NxN (default: 256)')
 parser.add_argument('--channels', type=int, default=3,  help='image channels (default: 3)')
 parser.add_argument('--bit_depth', type=int, default=8, help='image bit depth (default: 8)')
-parser.add_argument('--batch_size', type=int, default=32, help='batch size (default: 32)')
+parser.add_argument('--batch_size', type=int, default=4, help='batch size (default: 32)')
 parser.add_argument('--num_epochs', type=int, default=100,  help='epochs (default: 100)')
 parser.add_argument('--use_img_gen', type=bool, default=False, help='use image generator (default: False)')
 parser.add_argument('--img_mult', type=int, default=4, help='when using image generator, multiples the training set size (default: 4)')
-parser.add_argument('--saved_model_file', type=str, default=None, help='load saved model from file')
-parser.add_argument('extraargs', nargs=argparse.REMAINDER)
+parser.add_argument('--saved_model_file', default=None, help='load saved model from file')
 
-args = parser.parse_args()
-arg_dict = dict(itertools.zip_longest(*[iter(args.args)] * 2, fillvalue=""))
+args, unknown = parser.parse_known_args()
+arg_dict = dict(itertools.zip_longest(*[iter(unknown)] * 2, fillvalue=""))
 
-BASE_DIR = args.base_dir
+base_dir = args.base_dir
 train_dir = args.train_dir
 test_dir = args.test_dir
 model_name = args.model_name
 file_type = args.file_type
-label_file = args.label_file
+label_file_name = args.labels
 image_base_size = args.img_size
 channels = args.channels
 bit_depth = args.bit_depth
@@ -64,6 +63,21 @@ num_epochs = args.num_epochs
 use_generator = args.use_img_gen
 image_multiplier = args.img_mult
 saved_model_file = args.saved_model_file
+
+arg_dict['base_dir'] = args.base_dir
+arg_dict['train_dir'] = args.train_dir
+arg_dict['test_dir'] = args.test_dir
+arg_dict['model_name'] = args.model_name
+arg_dict['file_type'] = args.file_type
+arg_dict['label_file_name'] = args.labels
+arg_dict['image_base_size'] = args.img_size
+arg_dict['channels'] = args.channels
+arg_dict['bit_depth'] = args.bit_depth
+arg_dict['batch_size'] = args.batch_size
+arg_dict['num_epochs'] = args.num_epochs
+arg_dict['use_generator'] = args.use_img_gen
+arg_dict['image_multiplier'] = args.img_mult
+arg_dict['saved_model_file'] = args.saved_model_file
 
 if model_name not in models:
     print('Model %s not found' % model_name)
@@ -74,7 +88,7 @@ else:
 
 from lib.data_utils import DataManager
 
-dm = DataManager(BASE_DIR, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file)
+dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name)
 dm.load_labels()
 dm.load_file_list()
 dm.load_images_mmap()

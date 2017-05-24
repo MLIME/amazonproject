@@ -15,9 +15,9 @@ from models.utils import get_timestamp
 class DataManager:
 	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name):
 		assert file_ext in ['jpg', 'tif']
-		
+
 		self.base_dir = base_dir
-        self.model_name = model_name
+		self.model_name = model_name
 		self.file_ext = file_ext
 		self.image_base_size = image_base_size
 		self.channels = channels

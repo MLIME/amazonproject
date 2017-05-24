@@ -16,15 +16,13 @@ from utils import get_timestamp
 
 class SmallKerasCNNModel(BaseModel):
     def __init__(self):
-        self.args_names = ['--backend']
-        self.args_desc = ['Backend: <tf|th>']
-
+        pass
 
     def args(self):
         '''
         Lists KerasCNN parameters
         '''
-        return [(k, v) for (k, v) in zip(self.args_names, self.args_desc)]
+        pass
 
 
     def initialize(self, num_categories, args):
@@ -33,14 +31,19 @@ class SmallKerasCNNModel(BaseModel):
         '''
         metrics = KerasMetrics()
         num_categories = num_categories
-        
-        self.batch_size = args.get('--batch_size', 8)
-        self.image_multiplier = args.get('--batch_size', 1)
-        self.num_epochs = args.get('--num_epochs', 1)
+
         self.backend = args.get('--backend', 'tf')
-        saved_model_name = args.get('--saved_model_name', None)
-        image_base_size = args.get('--image_base_size', 256)
-        channels = args.get('--channels', 3)
+
+        self.base_dir = args.get('base_dir', '.')
+        self.batch_size = args.get('batch_size', 8)
+        self.image_multiplier = args.get('image_multiplier', 1)
+        self.num_epochs = args.get('num_epochs', 1)
+        self.use_generator = args.get('use_generator', False)
+        
+        saved_model_name = args.get('saved_model_name', None)
+        image_base_size = args.get('image_base_size', 256)
+        channels = args.get('channels', 3)
+        
 
         if saved_model_name:
         	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
@@ -53,7 +56,11 @@ class SmallKerasCNNModel(BaseModel):
 
             self.callbacks = [stopper, chkpt]
 
-            self.model = self._create_model(num_categories, metrics.f2_score, image_base_size, channels,
+            self.model = self._create_model(
+                num_categories=num_categories,
+                f2_score=metrics.f2_score, 
+                image_base_size=image_base_size,
+                channels=channels,
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
@@ -62,7 +69,7 @@ class SmallKerasCNNModel(BaseModel):
                 dropout1=0.2,
                 dropout2=0.5)
 
-            if use_generator:
+            if self.use_generator:
                 self._create_datagens()
 
 
@@ -71,7 +78,7 @@ class SmallKerasCNNModel(BaseModel):
         Fits a Keras CNN Model
         '''
         
-        if use_generator:
+        if self.use_generator:
             self.train_datagen.fit(X_train)
             self.valid_datagen.fit(X_valid)
 
@@ -134,7 +141,7 @@ class SmallKerasCNNModel(BaseModel):
             fill_mode='nearest')
 
 
-    def _create_model(num_categories, f2_score, image_base_size=256, channels=3, optimizer='adam', init='he_uniform', window_size=7, hidden_layer_size=256, activation='relu', dropout1=0.2, dropout2=0.5):
+    def _create_model(self, num_categories, f2_score, image_base_size=256, channels=3, optimizer='adam', init='he_uniform', window_size=7, hidden_layer_size=256, activation='relu', dropout1=0.2, dropout2=0.5):
         '''
         Create a Keras CNN model structure
         '''
