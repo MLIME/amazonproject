@@ -46,6 +46,10 @@ class DataManager:
 		self.label_file = pd.read_csv(self.label_file_name)
 		self.label_file = self.label_file.sort_values('image_name')
 		self.labels = self.vec.fit_transform(self.label_file['tags'])
+        self.labels = np.clip(self.labels.toarray(), 0, 1)
+        
+        self.label_names = np.array(vec.get_feature_names())
+        
 		self.num_categories = self.labels.toarray().shape[1]
 
 	

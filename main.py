@@ -93,6 +93,8 @@ dm.load_labels()
 dm.load_file_list()
 dm.load_images_mmap()
 
+arg_dict['label_names'] = dm.label_names
+
 model.initialize(dm.num_categories, arg_dict)
 model.fit(dm.data['X_train'], dm.data['y_train'], dm.data['X_valid'], dm.data['y_valid'])
 
