@@ -161,8 +161,8 @@ class DataManager:
 		return np.array(self.vec.inverse_transform(y))
 
 	
-	def save_submission_file(self, y_pred, thresholds):
-		pred_labels = self.get_labels(y_pred, thresholds)
+	def save_submission_file(self, y_pred):
+		pred_labels = self.get_labels(y_pred)
 		sub_file_name = os.path.join(self.base_dir, get_timestamp() + '_' + self.submission_file_name)
 		
 		with open(sub_file_name, 'w') as submission_file:
