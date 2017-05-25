@@ -16,6 +16,9 @@ from utils import get_timestamp
 
 class KerasMultiCNNModel(BaseModel):
     def __init__(self):
+        self.args_names = ['--use_neg_samples']
+        self.args_desc = ['use negative class samples']
+        
         self.sample_size = 1000
         
         self.label_indexes = dict()
@@ -42,7 +45,7 @@ class KerasMultiCNNModel(BaseModel):
         '''
         Lists KerasCNN parameters
         '''
-        pass
+        return [(k, v) for (k, v) in zip(self.args_names, self.args_desc)]
 
 
     def initialize(self, num_categories, args):
@@ -52,7 +55,7 @@ class KerasMultiCNNModel(BaseModel):
         self.metrics = KerasMetrics()
         self.num_categories = num_categories
 
-        self.backend = args.get('--backend', 'tf')
+        self.use_neg_samples = args.get('--use_neg_samples', False)
 
         self.base_dir = args.get('base_dir', '.')
         self.batch_size = args.get('batch_size', 8)
@@ -65,14 +68,20 @@ class KerasMultiCNNModel(BaseModel):
         self.image_base_size = args.get('image_base_size', 256)
         self.channels = args.get('channels', 3)
 
+        self.timestamp = get_timestamp()
+
         if saved_model_name:
         	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
         else:
-            chkpt_file_name = os.path.join(self.base_dir, get_timestamp() + '_chkpt_weights.{epoch:02d}-{val_loss:.2f}.hdf5')
-            model_file_name = os.path.join(self.base_dir, get_timestamp() + '_final_model.h5')
+            if self.use_neg_samples:
+                chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_neg_samples_chkpt_weights.{epoch:02d}-{val_f2_score:.2f}.hdf5')
+            else:
+                chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.{epoch:02d}-{val_f2_score:.2f}.hdf5')
+            
+            model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=2, verbose=1, mode='auto')
-            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_loss', verbose=1, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
             self.callbacks = [stopper, chkpt]
 
@@ -88,6 +97,11 @@ class KerasMultiCNNModel(BaseModel):
             self.label_indexes[label] = np.where(self.label_names == label)[0][0]
             self.train_rows[label] = np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 1)[0], self.sample_size)
             self.valid_rows[label] = np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 1)[0], self.sample_size)
+
+            if self.use_neg_samples:
+                self.train_rows[label] = np.hstack((self.train_rows[label], np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 0)[0], self.sample_size)))
+                self.valid_rows[label] = np.hstack((self.valid_rows[label], np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 0)[0], self.sample_size)))
+
 
         for group, labels in self.label_groups.items():
             train_rows = np.empty(0).astype('uint8')

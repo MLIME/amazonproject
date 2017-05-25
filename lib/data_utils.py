@@ -23,7 +23,9 @@ class DataManager:
 		self.channels = channels
 		self.bit_depth = bit_depth
 		self.max_image_value = (2 ** bit_depth) - 1
-		
+
+		self.timestamp = get_timestamp()
+        
 		self.pickle_file_name = os.path.join(self.base_dir, 'data_' + file_ext + '.pickle')
 		
 		self.submission_file_name = self.model_name + '_submission.csv'
@@ -173,7 +175,7 @@ class DataManager:
 	
 	def save_submission_file(self, y_pred):
 		pred_labels = self.get_labels(y_pred)
-		sub_file_name = os.path.join(self.base_dir, get_timestamp() + '_' + self.submission_file_name)
+		sub_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.submission_file_name)
 		
 		with open(sub_file_name, 'w') as submission_file:
 			submission_file.write('id,image_name,tags\n')

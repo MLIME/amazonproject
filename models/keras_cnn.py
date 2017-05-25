@@ -35,6 +35,8 @@ class KerasCNNModel(BaseModel):
 
         self.backend = args.get('--backend', 'tf')
 
+        self.timestamp = get_timestamp()
+
         self.base_dir = args.get('base_dir', '.')
         self.batch_size = args.get('batch_size', 8)
         self.image_multiplier = args.get('image_multiplier', 1)
@@ -45,15 +47,14 @@ class KerasCNNModel(BaseModel):
         image_base_size = args.get('image_base_size', 256)
         channels = args.get('channels', 3)
         
-
         if saved_model_name:
         	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
         else:
-            chkpt_file_name = os.path.join(self.base_dir, get_timestamp() + '_chkpt_weights.{epoch:02d}-{val_loss:.2f}.hdf5')
-            model_file_name = os.path.join(self.base_dir, get_timestamp() + '_final_model.h5')
+            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.{epoch:02d}-{val_f2_score:.2f}.hdf5')
+            model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=2, verbose=1, mode='auto')
-            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_loss', verbose=1, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
             self.callbacks = [stopper, chkpt]
 
