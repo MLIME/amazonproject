@@ -46,11 +46,11 @@ class DataManager:
 		self.label_file = pd.read_csv(self.label_file_name)
 		self.label_file = self.label_file.sort_values('image_name')
 		self.labels = self.vec.fit_transform(self.label_file['tags'])
-        self.labels = np.clip(self.labels.toarray(), 0, 1)
+		self.labels = np.clip(self.labels.toarray(), 0, 1)
+
+		self.num_categories = self.labels.shape[1]
         
-        self.label_names = np.array(vec.get_feature_names())
-        
-		self.num_categories = self.labels.toarray().shape[1]
+		self.label_names = np.array(self.vec.get_feature_names())
 
 	
 	def load_file_list(self):
@@ -103,20 +103,26 @@ class DataManager:
 		num_train_imgs = orig_num_train_imgs - num_valid_imgs
 		
 		print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs, num_valid_imgs, num_test_imgs))
+
+		train_imgs = np.arange(0, orig_num_train_imgs)
+		valid_imgs = np.random.choice(train_imgs, num_valid_imgs, replace=False)
+		train_imgs = np.setdiff1d(train_imgs, valid_imgs)
 		
-		if not (os.path.exists(self.X_train_mmap_file) and os.path.exists(self.X_test_mmap_file) and os.path.exists(self.X_valid_mmap_file)):
-			train_imgs = np.arange(0, orig_num_train_imgs)
-			valid_imgs = np.random.choice(train_imgs, num_valid_imgs, replace=False)
-			train_imgs = np.setdiff1d(train_imgs, valid_imgs)
-			
+		if not os.path.exists(self.X_train_mmap_file):
 			self.images_to_mmap(list(np.array(self.train_img_names)[train_imgs]), self.X_train_mmap_file)
-			self.images_to_mmap(list(np.array(self.train_img_names)[valid_imgs]), self.X_valid_mmap_file)
+		
+		if not os.path.exists(self.X_valid_mmap_file):
+			self.images_to_mmap(list(np.array(self.train_img_names)[valid_imgs]), self.X_valid_mmap_file)			
+
+		if not os.path.exists(self.X_test_mmap_file):
 			self.images_to_mmap(self.test_img_names, self.X_test_mmap_file)
-			
-			y_train = self.labels.toarray()[train_imgs]
+		
+		if not os.path.exists(self.y_train_file):
+			y_train = self.labels[train_imgs]
 			np.save(self.y_train_file, y_train)
-			
-			y_valid = self.labels.toarray()[valid_imgs]
+
+		if not os.path.exists(self.y_valid_file):			
+			y_valid = self.labels[valid_imgs]
 			np.save(self.y_valid_file, y_valid)
 		
 		X_train = self.load_mmap_file(self.X_train_mmap_file, num_train_imgs)

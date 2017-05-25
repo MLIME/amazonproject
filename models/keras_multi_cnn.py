@@ -49,8 +49,8 @@ class KerasMultiCNNModel(BaseModel):
         '''
         Initialize Keras CNN parameters
         '''
-        metrics = KerasMetrics()
-        num_categories = num_categories
+        self.metrics = KerasMetrics()
+        self.num_categories = num_categories
 
         self.backend = args.get('--backend', 'tf')
 
@@ -62,8 +62,8 @@ class KerasMultiCNNModel(BaseModel):
         self.label_names = args.get('label_names', None)
         
         saved_model_name = args.get('saved_model_name', None)
-        image_base_size = args.get('image_base_size', 256)
-        channels = args.get('channels', 3)
+        self.image_base_size = args.get('image_base_size', 256)
+        self.channels = args.get('channels', 3)
 
         if saved_model_name:
         	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
@@ -89,15 +89,15 @@ class KerasMultiCNNModel(BaseModel):
             self.train_rows[label] = np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 1)[0], self.sample_size)
             self.valid_rows[label] = np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 1)[0], self.sample_size)
 
-        for group, labels in label_groups.items():
+        for group, labels in self.label_groups.items():
             train_rows = np.empty(0).astype('uint8')
             valid_rows = np.empty(0).astype('uint8')
             cols = np.empty(0).astype('uint8')
     
             for label in labels:
-                cols = np.hstack((cols, label_indexes[label]))
-                train_rows = np.hstack((rows, self.train_rows[label]))
-                valid_rows = np.hstack((rows, self.valid_rows[label]))
+                cols = np.hstack((cols, self.label_indexes[label]))
+                train_rows = np.hstack((train_rows, self.train_rows[label]))
+                valid_rows = np.hstack((valid_rows, self.valid_rows[label]))
 
             self.label_group_cols[group] = np.unique(cols)
             self.label_group_train_rows[group] = np.unique(train_rows)
@@ -107,20 +107,22 @@ class KerasMultiCNNModel(BaseModel):
         for i in range(len(self.label_groups)):
             train_rows = self.label_group_train_rows[i]
             valid_rows = self.label_group_valid_rows[i]
-            cols = label_group_cols[i]
+            cols = self.label_group_cols[i]
 
-            self.result_cols = np.hstack((result_cols, cols))
+            self.result_cols = np.hstack((self.result_cols, cols))
+
+            print(self.label_groups[i])
 
             new_X_train = X_train[train_rows, :]
-            new_y_train = y_train[train_rows, cols]
+            new_y_train = y_train[train_rows, :][:, cols]
             new_X_valid = X_valid[valid_rows, :]
-            new_y_valid = y_valid[valid_rows, cols])
+            new_y_valid = y_valid[valid_rows, :][:, cols]
 
             model = self._create_model(
                 num_categories=len(cols),
-                f2_score=metrics.f2_score, 
-                image_base_size=image_base_size,
-                channels=channels,
+                f2_score=self.metrics.f2_score, 
+                image_base_size=self.image_base_size,
+                channels=self.channels,
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
@@ -133,7 +135,7 @@ class KerasMultiCNNModel(BaseModel):
                 self.train_datagen.fit(new_X_train)
                 self.valid_datagen.fit(new_X_valid)
 
-                self.model.fit_generator(
+                model.fit_generator(
                     self.train_datagen.flow(new_X_train, new_y_train, batch_size=self.batch_size * 2),
                     steps_per_epoch=(len(new_X_train) / self.batch_size) * self.image_multiplier,
                     epochs=self.num_epochs,
