@@ -1,0 +1,10 @@
+image_name,tags
+test_0,clear haze primary
+test_1,agriculture water
+test_2,agriculture clear
+test_3,clear primary
+test_4,agriculture clear habitation haze primary road water
+file_0,agriculture
+file_1,agriculture clear water
+file_2,agriculture clear haze
+file_3,clear primary road water
