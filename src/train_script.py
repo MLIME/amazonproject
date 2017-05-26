@@ -5,7 +5,7 @@ from tools.util import randomize_in_place
 from tools.DataManager import DataManager
 
 
-my_data = DataManager("data/")
+my_data = DataManager("data/", image_base_size=55)
 X_train = my_data.data['X_train']
 y_train = my_data.data['y_train']
 X_test = my_data.data['X_test']
@@ -25,9 +25,10 @@ my_dataholder = DataHolder(X_train,
                            X_test,
                            X_test_add)
 my_config = Config(batch_size=120,
-                   learning_rate=lr)
+                   learning_rate=lr,
+                   image_size=55)
 my_model = CNNModel(my_config, my_dataholder)
-train_model(my_model, my_dataholder, 4001, 1000)
+train_model(my_model, my_dataholder, 10001, 1000)
 print(check_valid(my_model))
 test_pred = test_prediction(my_model)
 test_pred_add = test_prediction(my_model, add=True)
