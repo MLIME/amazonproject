@@ -19,7 +19,7 @@ class KerasMultiCNNModel(BaseModel):
         self.args_names = ['--use_neg_samples']
         self.args_desc = ['use negative class samples']
         
-        self.sample_size = 1000
+        self.sample_size = 5000
         
         self.label_indexes = dict()
         self.label_groups = dict()
@@ -223,17 +223,18 @@ class KerasMultiCNNModel(BaseModel):
 
         model = Sequential()
 
-        model.add(Conv2D(96, (window_size, window_size), input_shape=(image_base_size, image_base_size, channels), padding='same', activation=activation, kernel_initializer = init))
+        model.add(Conv2D(32, (window_size, window_size), input_shape=(image_base_size, image_base_size, channels), padding='same', activation=activation, kernel_initializer = init))
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout1))
+        model.add(BatchNormalization())
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout1))
+        model.add(BatchNormalization())
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))

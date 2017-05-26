@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from glob import glob
-import cv2
+from skimage import io, transform, img_as_ubyte
 from scipy import misc
 from models.utils import get_timestamp
+import warnings
 
+warnings.filterwarnings('ignore')
 
 class DataManager:
 	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name):
@@ -22,7 +24,7 @@ class DataManager:
 		self.image_base_size = image_base_size
 		self.channels = channels
 		self.bit_depth = bit_depth
-		self.max_image_value = (2 ** bit_depth) - 1
+		self.max_image_value = 255
 
 		self.timestamp = get_timestamp()
         
@@ -70,7 +72,7 @@ class DataManager:
 	
 	def read_image(self, img_name):
 		if self.file_ext == 'tif' and self.bit_depth == 16:
-			img = cv2.resize(cv2.imread(img_name, cv2.IMREAD_UNCHANGED), (self.image_base_size, self.image_base_size))
+			img = transform.resize(img_as_ubyte(io.imread(img_name)), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
 		else:
 			img = misc.imresize(misc.imread(img_name), (self.image_base_size, self.image_base_size, self.channels))
 		
