@@ -39,6 +39,7 @@ parser.add_argument('--file_type', default='jpg', help='file type', choices=['jp
 parser.add_argument('--labels', default='train.csv', help='label file name')
 parser.add_argument('--img_size', type=int, default=256,  help='image size NxN (default: 256)')
 parser.add_argument('--channels', type=int, default=3,  help='image channels (default: 3)')
+parser.add_argument('--channel_mask', type=int, default=None,  help='bitmask for selecting channel combinations')
 parser.add_argument('--bit_depth', type=int, default=8, help='image bit depth (default: 8)')
 parser.add_argument('--batch_size', type=int, default=4, help='batch size (default: 32)')
 parser.add_argument('--num_epochs', type=int, default=100,  help='epochs (default: 100)')
@@ -57,6 +58,7 @@ file_type = args.file_type
 label_file_name = args.labels
 image_base_size = args.img_size
 channels = args.channels
+channel_mask = args.channel_mask
 bit_depth = args.bit_depth
 batch_size = args.batch_size
 num_epochs = args.num_epochs
@@ -72,6 +74,7 @@ arg_dict['file_type'] = args.file_type
 arg_dict['label_file_name'] = args.labels
 arg_dict['image_base_size'] = args.img_size
 arg_dict['channels'] = args.channels
+arg_dict['channel_mask'] = args.channel_mask
 arg_dict['bit_depth'] = args.bit_depth
 arg_dict['batch_size'] = args.batch_size
 arg_dict['num_epochs'] = args.num_epochs
@@ -88,7 +91,7 @@ else:
 
 from lib.data_utils import DataManager
 
-dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name)
+dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name, channel_mask)
 dm.load_labels()
 dm.load_file_list()
 dm.load_images_mmap()

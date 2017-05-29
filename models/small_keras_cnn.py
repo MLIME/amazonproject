@@ -14,6 +14,7 @@ from keras_metrics import KerasMetrics
 from base_model import BaseModel
 from utils import get_timestamp
 
+
 class SmallKerasCNNModel(BaseModel):
     def __init__(self):
         pass
@@ -54,7 +55,7 @@ class SmallKerasCNNModel(BaseModel):
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=2, verbose=1, mode='auto')
-            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
 

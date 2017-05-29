@@ -14,6 +14,7 @@ from keras_metrics import KerasMetrics
 from base_model import BaseModel
 from utils import get_timestamp
 
+
 class KerasCNNModel(BaseModel):
     def __init__(self):
         pass
@@ -54,7 +55,7 @@ class KerasCNNModel(BaseModel):
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=2, verbose=1, mode='auto')
-            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
 
@@ -150,16 +151,26 @@ class KerasCNNModel(BaseModel):
 
         model = Sequential()
 
-        model.add(Conv2D(96, (window_size, window_size), input_shape=(image_base_size, image_base_size, channels), padding='same', activation=activation, kernel_initializer = init))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(BatchNormalization(input_shape=(image_base_size, image_base_size, channels)))
+        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(BatchNormalization())
+        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(BatchNormalization())
+        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout1))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(BatchNormalization())
+        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(dropout1))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(Dropout(dropout2))
+        model.add(BatchNormalization())
+        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
+        model.add(Dense(hidden_layer_size, activation=activation))
+        model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))

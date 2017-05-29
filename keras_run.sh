@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export TF_CPP_MIN_LOG_LEVEL=3
+
 if [[ $# -lt 6 ]]
 then
     echo "usage: $0 <KERAS_BACKEND> (theano|tensorflow> <CUDA_VISIBLE_DEVICES> (0,1,...) [main.py params]"

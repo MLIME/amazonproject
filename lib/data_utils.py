@@ -15,14 +15,24 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class DataManager:
-	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name):
+	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name, channel_mask=None):
 		assert file_ext in ['jpg', 'tif']
 
 		self.base_dir = base_dir
 		self.model_name = model_name
 		self.file_ext = file_ext
 		self.image_base_size = image_base_size
+		
 		self.channels = channels
+        
+		if not channel_mask:
+			self.channel_mask = None
+			self.output_channels = channels
+		else:
+			self.channel_mask = [2**p & channel_mask == 2**p for p in  range(channels)]
+			self.output_channels = np.sum(self.channel_mask)
+
+        
 		self.bit_depth = bit_depth
 		self.max_image_value = 255
 
@@ -38,12 +48,12 @@ class DataManager:
 		self.label_file_name = os.path.join(base_dir, label_file_name)
 		self.vec = CountVectorizer(min_df=1)
 		
-		self.X_train_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.channels) + '_' + str(self.image_base_size) + '_X_train.mmap')
-		self.X_test_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.channels) + '_' + str(self.image_base_size) + '_X_test.mmap')
-		self.X_valid_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.channels) + '_' + str(self.image_base_size) + '_X_valid.mmap')
+		self.X_train_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_train.mmap')
+		self.X_test_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_test.mmap')
+		self.X_valid_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_valid.mmap')
 		
-		self.y_train_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.channels) + '_' + str(self.image_base_size) + '_y_train.npy')
-		self.y_valid_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.channels) + '_' + str(self.image_base_size) + '_y_valid.npy')
+		self.y_train_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_train.npy')
+		self.y_valid_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_valid.npy')
 
 	
 	def load_labels(self):
@@ -74,9 +84,13 @@ class DataManager:
 		if self.file_ext == 'tif' and self.bit_depth == 16:
 			img = transform.resize(img_as_ubyte(io.imread(img_name)), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
 		else:
-			img = misc.imresize(misc.imread(img_name), (self.image_base_size, self.image_base_size, self.channels))
-		
-		return np.array(img[:,:,:self.channels], dtype='float32')
+			img = transform.resize(io.imread(img_name), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
+       
+        
+		if not self.channel_mask:
+			return np.array(img[:,:,:self.channels], dtype='float32')
+		else:
+			return np.array(img[:,:,self.channel_mask], dtype='float32')
 
 	
 	def load_images(self):
@@ -146,7 +160,7 @@ class DataManager:
 
 	
 	def load_mmap_file(self, file_name, length):
-		return np.memmap(file_name, dtype='float32', mode = 'r', shape=(length, self.image_base_size, self.image_base_size, self.channels))
+		return np.memmap(file_name, dtype='float32', mode = 'r', shape=(length, self.image_base_size, self.image_base_size, self.output_channels))
 	
 	
 	def images_to_mmap(self, img_names, file_name):
@@ -156,7 +170,7 @@ class DataManager:
 		print('Writing %d images to %s' % (len(img_names), file_name))
 		
 		os.mknod(file_name)
-		data = np.memmap(file_name, dtype='float32', mode = 'r+', shape=(len(img_names), self.image_base_size, self.image_base_size, self.channels))
+		data = np.memmap(file_name, dtype='float32', mode = 'r+', shape=(len(img_names), self.image_base_size, self.image_base_size, self.output_channels))
 		
 		with click.progressbar(range(len(img_names))) as vals:
 			for i in vals:
