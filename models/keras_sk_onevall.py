@@ -74,9 +74,7 @@ class KerasSKOneVsAllModel(BaseModel):
 
         self.model = OneVsRestClassifier(estimator=k, n_jobs=1)
         self.model.set_params(estimator__batch_size=self.batch_size, estimator__epochs=self.num_epochs, estimator__verbose=1, estimator__validation_split=0.2)
-
         self.model.fit(X_train, y_train) 
-            
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 
     def predict(self, X_test):
