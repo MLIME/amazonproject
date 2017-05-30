@@ -108,9 +108,8 @@ class KerasMultiCNNModel(BaseModel):
             self.train_rows[label] = np.where(y_train[:, self.label_indexes[label]] == 1)[0]
             self.valid_rows[label] = np.where(y_valid[:, self.label_indexes[label]] == 1)[0]
 
-            if self.use_neg_samples:
-                self.train_rows[label] = np.hstack((self.train_rows[label], np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 0)[0], self.sample_size*2)))
-                self.valid_rows[label] = np.hstack((self.valid_rows[label], np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 0)[0], self.sample_size*2)))
+            self.train_rows[label] = np.hstack((self.train_rows[label], np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 0)[0], len(self.train_rows[label]))))
+            self.valid_rows[label] = np.hstack((self.valid_rows[label], np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 0)[0], len(self.valid_rows[label]))))
 
 
         for group, labels in self.label_groups.items():
@@ -150,7 +149,7 @@ class KerasMultiCNNModel(BaseModel):
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
-                hidden_layer_size=256,
+                hidden_layer_size=1024,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
@@ -259,8 +258,8 @@ class KerasMultiCNNModel(BaseModel):
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(num_categories, activation='softmax'))
+        model.add(Dense(num_categories, activation='sigmoid'))
 
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=[f2_score])
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score])
     
         return model

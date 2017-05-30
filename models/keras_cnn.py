@@ -67,7 +67,7 @@ class KerasCNNModel(BaseModel):
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
-                hidden_layer_size=1024,
+                hidden_layer_size=2048,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
