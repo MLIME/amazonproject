@@ -15,7 +15,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class DataManager:
-	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name, channel_mask=None):
+	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name, channel_mask=None, sobel_cor=False):
 		assert file_ext in ['jpg', 'tif']
 
 		self.base_dir = base_dir
@@ -35,6 +35,8 @@ class DataManager:
         
 		self.bit_depth = bit_depth
 		self.max_image_value = 255
+		
+		self.sobel_cor = sobel_cor
 
 		self.timestamp = get_timestamp()
         
@@ -68,13 +70,17 @@ class DataManager:
 
 	
 	def load_file_list(self):
-		self.train_img_names = sorted(glob(self.train_dir + '/*.' + self.file_ext))
+		self.train_img_names = []
+		
+		for r in self.label_file.iterrows():
+			img_name = r[1][0]
+			self.train_img_names.append(os.path.join(self.train_dir, img_name + '.' + self.file_ext))
+
 		self.test_img_names = sorted(glob(self.test_dir + '/*.' + self.file_ext))
 		
 		self.X_train_names = [os.path.basename(img_name).replace('.' + self.file_ext, '') for img_name in self.train_img_names]
 		self.X_test_names = [os.path.basename(img_name).replace('.' + self.file_ext, '') for img_name in self.test_img_names]
 		
-		self.X_train_names = sorted(self.X_train_names)
 		self.X_test_names = sorted(self.X_test_names)
 		
 		assert self.label_file['image_name'].tolist() == self.X_train_names
@@ -86,6 +92,9 @@ class DataManager:
 		else:
 			img = transform.resize(io.imread(img_name), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
        
+		if self.sobel_cor:
+			pass #TODO: implement filters
+
         
 		if not self.channel_mask:
 			return np.array(img[:,:,:self.channels], dtype='float32')
@@ -121,6 +130,9 @@ class DataManager:
 		num_train_imgs = orig_num_train_imgs - num_valid_imgs
 		
 		print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs, num_valid_imgs, num_test_imgs))
+
+#		train_imgs = np.arange(0, num_train_imgs)
+#		valid_imgs = np.arange(num_train_imgs, orig_num_train_imgs)
 
 		train_imgs = np.arange(0, orig_num_train_imgs)
 		valid_imgs = np.random.choice(train_imgs, num_valid_imgs, replace=False)
