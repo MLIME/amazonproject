@@ -32,7 +32,7 @@ class XGBGridModel(BaseModel):
         self.image_base_size = args.get('image_base_size', 64)
         self.channels = args.get('channels', 3)
 
-        param_grid = [{'estimator__n_estimators': [100, 500], 'estimator__max_depth': [3, 7], 'estimator__learning_rate': [0.001, 0.1]}]
+        param_grid = [{'estimator__n_estimators': [700, 1500], 'estimator__max_depth': [7, 15], 'estimator__learning_rate': [0.1]}]
         f2_scorer = make_scorer(fbeta_score, beta=2, average='samples')
 
         xgb = XGBClassifier(silent=False)

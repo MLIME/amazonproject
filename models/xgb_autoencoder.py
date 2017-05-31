@@ -107,7 +107,7 @@ class XGBEncoderModel(BaseModel):
                 self._create_datagens()
 
 
-        xgb = XGBClassifier(n_estimators=500, max_depth=5, learning_rate=0.1, silent=False)
+        xgb = XGBClassifier(n_estimators=700, max_depth=7, learning_rate=0.1, silent=False)
         self.ovrmodel = OneVsRestClassifier(xgb, n_jobs=4)
 
 
