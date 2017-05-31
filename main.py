@@ -44,6 +44,7 @@ parser.add_argument('--bit_depth', type=int, default=8, help='image bit depth (d
 parser.add_argument('--batch_size', type=int, default=4, help='batch size (default: 32)')
 parser.add_argument('--num_epochs', type=int, default=100,  help='epochs (default: 100)')
 parser.add_argument('--use_img_gen', type=bool, default=False, help='use image generator (default: False)')
+parser.add_argument('--apply_sobel_co', type=bool, default=False, help='apply Sobel and Co-occurence matrix transforms (default: False)')
 parser.add_argument('--img_mult', type=int, default=4, help='when using image generator, multiples the training set size (default: 4)')
 parser.add_argument('--saved_model_file', default=None, help='load saved model from file')
 
@@ -65,6 +66,7 @@ num_epochs = args.num_epochs
 use_generator = args.use_img_gen
 image_multiplier = args.img_mult
 saved_model_file = args.saved_model_file
+apply_sobel_co = args.apply_sobel_co
 
 arg_dict['base_dir'] = args.base_dir
 arg_dict['train_dir'] = args.train_dir
@@ -81,6 +83,7 @@ arg_dict['num_epochs'] = args.num_epochs
 arg_dict['use_generator'] = args.use_img_gen
 arg_dict['image_multiplier'] = args.img_mult
 arg_dict['saved_model_file'] = args.saved_model_file
+arg_dict['apply_sobel_co'] = args.apply_sobel_co
 
 if model_name not in models:
     print('Model %s not found' % model_name)
@@ -91,7 +94,7 @@ else:
 
 from lib.data_utils import DataManager
 
-dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name, channel_mask)
+dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name, channel_mask, apply_sobel_co)
 dm.load_labels()
 dm.load_file_list()
 dm.load_images_mmap()

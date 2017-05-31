@@ -81,9 +81,9 @@ class XGBEncoderModel(BaseModel):
         self.timestamp = get_timestamp()
 
         if saved_model_name:
-        	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
+        	self.model = load_model(saved_model_name)
         else:
-            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.{epoch:02d}-{val_f2_score:.2f}.hdf5')
+            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.{epoch:02d}-{val_loss:.2f}.hdf5')
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=2, verbose=1, mode='auto')
@@ -107,7 +107,7 @@ class XGBEncoderModel(BaseModel):
                 self._create_datagens()
 
 
-        xgb = XGBClassifier(n_estimators=500, max_depth=5, learning_rate=0.001, silent=False)
+        xgb = XGBClassifier(n_estimators=500, max_depth=5, learning_rate=0.1, silent=False)
         self.ovrmodel = OneVsRestClassifier(xgb, n_jobs=4)
 
 
@@ -199,8 +199,6 @@ class XGBEncoderModel(BaseModel):
         model = UpSampling2D(size=(2, 2))(model)
         model = Conv2D(32, (window_size, window_size), padding='same', activation=activation)(model)
         model = UpSampling2D(size=(2, 2))(model)
-        #model = Conv2D(32, (window_size, window_size), padding='same', activation=activation)(model)
-        #model = UpSampling2D(size=(2, 2))(model)
         decoder = Conv2D(3, (window_size, window_size), padding='same', activation='sigmoid')(model)
 
         autoencoder = Model(input_img, decoder)

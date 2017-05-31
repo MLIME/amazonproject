@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from glob import glob
-from skimage import io, transform, img_as_ubyte
+from skimage import io, transform, img_as_ubyte, filters, color
+from skimage.feature import greycomatrix, local_binary_pattern
 from scipy import misc
 from models.utils import get_timestamp
 import warnings
@@ -15,7 +16,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class DataManager:
-	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name, channel_mask=None, sobel_cor=False):
+	def __init__(self, base_dir, model_name, train_dir_name, test_dir_name, file_ext, image_base_size, channels, bit_depth, label_file_name, channel_mask=None, apply_sobel_co=False):
 		assert file_ext in ['jpg', 'tif']
 
 		self.base_dir = base_dir
@@ -36,8 +37,6 @@ class DataManager:
 		self.bit_depth = bit_depth
 		self.max_image_value = 255
 		
-		self.sobel_cor = sobel_cor
-
 		self.timestamp = get_timestamp()
         
 		self.pickle_file_name = os.path.join(self.base_dir, 'data_' + file_ext + '.pickle')
@@ -50,12 +49,23 @@ class DataManager:
 		self.label_file_name = os.path.join(base_dir, label_file_name)
 		self.vec = CountVectorizer(min_df=1)
 		
-		self.X_train_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_train.mmap')
-		self.X_test_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_test.mmap')
-		self.X_valid_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_valid.mmap')
+		self.apply_sobel_co = apply_sobel_co
+
+		if self.apply_sobel_co:
+			self.X_train_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_sobel_co_X_train.mmap')
+			self.X_test_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_sobel_co_X_test.mmap')
+			self.X_valid_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_sobel_co_X_valid.mmap')
+
+			self.y_train_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_sobel_co_y_train.npy')
+			self.y_valid_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_sobel_co_y_valid.npy')
+
+		else:
+			self.X_train_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_train.mmap')
+			self.X_test_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_test.mmap')
+			self.X_valid_mmap_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_X_valid.mmap')
 		
-		self.y_train_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_train.npy')
-		self.y_valid_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_valid.npy')
+			self.y_train_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_train.npy')
+			self.y_valid_file = os.path.join(self.base_dir, self.file_ext + '_' + str(self.output_channels) + '_' + str(self.image_base_size) + '_y_valid.npy')
 
 	
 	def load_labels(self):
@@ -92,14 +102,34 @@ class DataManager:
 		else:
 			img = transform.resize(io.imread(img_name), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
        
-		if self.sobel_cor:
-			pass #TODO: implement filters
+		if self.apply_sobel_co:
+			img = self.apply_filter(img)
 
         
 		if not self.channel_mask:
 			return np.array(img[:,:,:self.channels], dtype='float32')
 		else:
 			return np.array(img[:,:,self.channel_mask], dtype='float32')
+
+	
+	def apply_filter(self, img):
+		img_gray = color.rgb2gray(img)
+		img_gray = np.floor(img_gray * self.max_image_value).astype('uint8')
+
+		img_glcm = greycomatrix(img_gray, [128], [0], self.max_image_value+1)
+		img_glcm = img_as_ubyte(img_glcm[:,:,0,0] / img_glcm[:,:,0,0].max())
+
+		img_sobel = img_as_ubyte(filters.sobel(img[:,:,1] / self.max_image_value))
+		#img_lbp = img_as_ubyte(local_binary_pattern(img[:,:,1], 64, 8, method="uniform") / self.max_image_value)
+
+		img_green = img[:,:,1]
+
+		new_img = np.zeros((self.image_base_size, self.image_base_size, 3)).astype('uint8')
+		new_img[:,:,0] = img_green
+		new_img[:,:,1] = img_sobel
+		new_img[:,:,2] = img_glcm
+
+		return new_img
 
 	
 	def load_images(self):
