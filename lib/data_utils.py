@@ -117,7 +117,7 @@ class DataManager:
 		img_gray = np.floor(img_gray * self.max_image_value).astype('uint8')
 
 		img_glcm = greycomatrix(img_gray, [128], [0], self.max_image_value+1)
-		img_glcm = transform.resize(img_as_ubyte(img_glcm[:,:,0,0] / img_glcm[:,:,0,0].max()), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
+		img_glcm = transform.resize(img_as_ubyte(img_glcm[:,:,0,0] / img_glcm[:,:,0,0].max()), (self.image_base_size, self.image_base_size), preserve_range=True)
 
 		img_sobel = img_as_ubyte(filters.sobel(img[:,:,1] / self.max_image_value))
 		#img_lbp = img_as_ubyte(local_binary_pattern(img[:,:,1], 64, 8, method="uniform") / self.max_image_value)
