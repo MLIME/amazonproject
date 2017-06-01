@@ -134,12 +134,12 @@ class DataManager:
             img = transform.resize(img_as_ubyte(io.imread(img_name)),
                                    (self.image_base_size,
                                     self.image_base_size,
-                                    self.channels), preserve_range=True)
+                                    self.channels))
         else:
             img = transform.resize(io.imread(img_name),
                                    (self.image_base_size,
                                     self.image_base_size,
-                                    self.channels), preserve_range=True)
+                                    self.channels))
 
         if not self.channel_mask:
             return np.array(img[:, :, :self.channels], dtype='float32')
