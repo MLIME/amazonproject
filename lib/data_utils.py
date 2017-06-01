@@ -8,17 +8,29 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from glob import glob
 from skimage import io, transform, img_as_ubyte
-from scipy import misc
 from models.utils import get_timestamp
 import warnings
+import pickle
 
 warnings.filterwarnings('ignore')
 
 
 class DataManager:
     """
-    Add docstring
+    Class that handles all data information.
+    It transform the images into an array adn the labels into
+    an array of 0s and 1s; it holds the relationship between the
+    file name and the label. And This class also creates a submission file.
 
+    :type base_dir: str
+    :type model_name: str
+    :type train_dir_name: str
+    :type test_dir_name: str
+    :type file_ext: str
+    :type channels: int
+    :type bit_depth: int
+    :type label_file_name: str
+    :type channel_mask: None or int
     """
     def __init__(self,
                  base_dir,
@@ -32,7 +44,6 @@ class DataManager:
                  label_file_name,
                  channel_mask=None):
         assert file_ext in ['jpg', 'tif']
-        print(file_ext)
 
         self.base_dir = base_dir
         self.model_name = model_name
@@ -94,7 +105,8 @@ class DataManager:
 
     def load_file_list(self):
         """
-        Add docstring
+        Creates sorted lists of all files from the folders
+        self.train_dir and self.test_dir
 
         """
         sufix = '/*.' + self.file_ext
@@ -111,13 +123,23 @@ class DataManager:
 
     def read_image(self, img_name):
         """
-        Add docstring
+        From a image path "img_name" this folder resize it using
+        into a image of shape
+        (self.image_base_size, self.image_base_size, self.channels)
 
+        :type img_name: str
+        :rtype: np array
         """
         if self.file_ext == 'tif' and self.bit_depth == 16:
-            img = transform.resize(img_as_ubyte(io.imread(img_name)), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
+            img = transform.resize(img_as_ubyte(io.imread(img_name)),
+                                   (self.image_base_size,
+                                    self.image_base_size,
+                                    self.channels), preserve_range=True)
         else:
-            img = transform.resize(io.imread(img_name), (self.image_base_size, self.image_base_size, self.channels), preserve_range=True)
+            img = transform.resize(io.imread(img_name),
+                                   (self.image_base_size,
+                                    self.image_base_size,
+                                    self.channels), preserve_range=True)
 
         if not self.channel_mask:
             return np.array(img[:, :, :self.channels], dtype='float32')
@@ -126,8 +148,9 @@ class DataManager:
 
     def load_images(self):
         """
-        Add docstring
-
+        Read all files from the folders self.train_dir and self.test_dir
+        and creates a pickle of the images as arrays.
+        All the data information is store in the dict self.data
         """
         if not os.path.exists(self.pickle_file_name):
             X_train = np.array([self.read_image(img_name) for img_name in self.train_img_names]) / self.max_image_value
@@ -139,7 +162,7 @@ class DataManager:
             self.data['y_train'] = y_train
             self.data['X_train'] = X_train
             self.data['X_test'] = X_test
-
+            pickle_file = self.pickle_file_name
             with open(pickle_file, 'wb') as pickle_file:
                 pickle_file.dump(self.data)
         else:
@@ -148,8 +171,11 @@ class DataManager:
 
     def load_images_mmap(self, validation_split=0.2):
         """
-        Add docstring
+        Read all files from the folders self.train_dir and self.test_dir
+        and creates a mmap file of the images as arrays
+        All the data information is store in the dict self.data
 
+        :type validation_split: float
         """
         assert validation_split > 0.0
 
@@ -158,17 +184,23 @@ class DataManager:
         num_valid_imgs = int(orig_num_train_imgs * validation_split)
         num_train_imgs = orig_num_train_imgs - num_valid_imgs
 
-        print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs, num_valid_imgs, num_test_imgs))
+        print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs,
+                                                  num_valid_imgs,
+                                                  num_test_imgs))
 
         train_imgs = np.arange(0, orig_num_train_imgs)
-        valid_imgs = np.random.choice(train_imgs, num_valid_imgs, replace=False)
+        valid_imgs = np.random.choice(train_imgs,
+                                      num_valid_imgs,
+                                      replace=False)
         train_imgs = np.setdiff1d(train_imgs, valid_imgs)
 
         if not os.path.exists(self.X_train_mmap_file):
-            self.images_to_mmap(list(np.array(self.train_img_names)[train_imgs]), self.X_train_mmap_file)
+            train_images = list(np.array(self.train_img_names)[train_imgs])
+            self.images_to_mmap(train_images, self.X_train_mmap_file)
 
         if not os.path.exists(self.X_valid_mmap_file):
-            self.images_to_mmap(list(np.array(self.train_img_names)[valid_imgs]), self.X_valid_mmap_file)
+            valid_images = list(np.array(self.train_img_names)[valid_imgs])
+            self.images_to_mmap(valid_images, self.X_valid_mmap_file)
 
         if not os.path.exists(self.X_test_mmap_file):
             self.images_to_mmap(self.test_img_names, self.X_test_mmap_file)
@@ -198,15 +230,26 @@ class DataManager:
 
     def load_mmap_file(self, file_name, length):
         """
-        Add docstring
+        Loading a file as a memmap.
 
+        :type file_name: str
+        :type length: int
+        :rtype: np memmap
         """
-        return np.memmap(file_name, dtype='float32', mode = 'r', shape=(length, self.image_base_size, self.image_base_size, self.output_channels))
+        img_shape = (length,
+                     self.image_base_size,
+                     self.image_base_size,
+                     self.output_channels)
+        return np.memmap(file_name, dtype='float32', mode='r', shape=img_shape)
 
     def images_to_mmap(self, img_names, file_name):
         """
-        Add docstring
+        Transform all images from the list of image files "img_names"
+        into an np. array and store it in the np.memmap with the name
+        "file_name"
 
+        :type img_names: list
+        :type file_name: str
         """
         if os.path.exists(file_name):
             os.remove(file_name)
@@ -214,11 +257,19 @@ class DataManager:
         print('Writing %d images to %s' % (len(img_names), file_name))
 
         os.mknod(file_name)
-        data = np.memmap(file_name, dtype='float32', mode='r+', shape=(len(img_names), self.image_base_size, self.image_base_size, self.output_channels))
+        img_shape = (len(img_names),
+                     self.image_base_size,
+                     self.image_base_size,
+                     self.output_channels)
+        data = np.memmap(file_name,
+                         dtype='float32',
+                         mode='r+',
+                         shape=img_shape)
 
         with click.progressbar(range(len(img_names))) as vals:
             for i in vals:
-                data[i] = np.array(self.read_image(img_names[i]) / self.max_image_value, dtype='float32')
+                img = self.read_image(img_names[i]) / self.max_image_value
+                data[i] = np.array(img, dtype='float32')
 
                 if i % 1000 == 0 and i > 0:
                     data.flush()
@@ -240,8 +291,10 @@ class DataManager:
 
     def save_submission_file(self, y_pred):
         """
-        Add docstring
+        Create a submission file as a csv using the predictions
+        from the array "y_pred".
 
+        :type y_pred: np array
         """
         pred_labels = self.get_labels(y_pred)
         name = self.timestamp + '_' + self.submission_file_name
