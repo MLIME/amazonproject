@@ -67,7 +67,7 @@ class KerasCNNModel(BaseModel):
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
-                hidden_layer_size=2048,
+                hidden_layer_size=512,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
@@ -152,21 +152,21 @@ class KerasCNNModel(BaseModel):
         model = Sequential()
 
         model.add(BatchNormalization(input_shape=(image_base_size, image_base_size, channels)))
-        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(BatchNormalization())
-        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(BatchNormalization())
-        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout1))
         model.add(BatchNormalization())
-        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout2))
         model.add(BatchNormalization())
-        model.add(Conv2D(96, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(hidden_layer_size, activation=activation))

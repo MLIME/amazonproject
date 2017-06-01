@@ -31,7 +31,7 @@ class XGBModel(BaseModel):
         self.image_base_size = args.get('image_base_size', 64)
         self.channels = args.get('channels', 3)
 
-        xgb = XGBClassifier(n_estimators=200, max_depth=3, learning_rate=0.001, silent=False)
+        xgb = XGBClassifier(n_estimators=1000, max_depth=10, learning_rate=0.1, silent=False)
         self.model = OneVsRestClassifier(xgb, n_jobs=4)
 
 
