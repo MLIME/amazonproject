@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 
+
 class BaseModel(ABC):
     @abstractmethod
     def args(self):
@@ -11,7 +12,6 @@ class BaseModel(ABC):
         '''
         pass
 
-
     @abstractmethod
     def initialize(self, args):
         '''
@@ -19,15 +19,13 @@ class BaseModel(ABC):
         '''
         pass
 
-
     @abstractmethod
     def fit(self, X_train, y_train, X_valid, y_valid):
         '''
         Fits a model
         '''
-        
-        pass
 
+        pass
 
     @abstractmethod
     def predict(self, X_test):
