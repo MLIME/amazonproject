@@ -4,18 +4,27 @@
 import lib.importdir
 import argparse
 import itertools
+from lib.data_utils import DataManager
 
 lib.importdir.do("models", globals())
 module_list = globals()['module_list']
-module_list.remove('base_model') 
+module_list.remove('base_model')
 
 models = []
+att_list = ['__builtins__',
+            '__cached__',
+            '__doc__',
+            '__file__',
+            '__loader__',
+            '__name__',
+            '__package__',
+            '__spec__']
 
 for module in module_list:
     mod = dir(globals()[module])
-    
+
     for m in mod:
-        if m not in ['__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__']:
+        if m not in att_list:
             klass = module + '.' + m
             baseClass = module + '.BaseModel'
 
@@ -88,10 +97,16 @@ if model_name not in models:
 else:
     model = eval(model_name)()
 
-
-from lib.data_utils import DataManager
-
-dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type, image_base_size, channels, bit_depth, label_file_name, channel_mask)
+dm = DataManager(base_dir,
+                 model_name,
+                 train_dir,
+                 test_dir,
+                 file_type,
+                 image_base_size,
+                 channels,
+                 bit_depth,
+                 label_file_name,
+                 channel_mask)
 dm.load_labels()
 dm.load_file_list()
 dm.load_images_mmap()
@@ -99,7 +114,10 @@ dm.load_images_mmap()
 arg_dict['label_names'] = dm.label_names
 
 model.initialize(dm.num_categories, arg_dict)
-model.fit(dm.data['X_train'], dm.data['y_train'], dm.data['X_valid'], dm.data['y_valid'])
+model.fit(dm.data['X_train'],
+          dm.data['y_train'],
+          dm.data['X_valid'],
+          dm.data['y_valid'])
 
 y_pred = model.predict(dm.data['X_test'])
 dm.save_submission_file(y_pred)
