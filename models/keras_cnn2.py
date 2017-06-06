@@ -15,7 +15,7 @@ from base_model import BaseModel
 from utils import get_timestamp
 
 
-class KerasCNNModel(BaseModel):
+class KerasCNNModel2(BaseModel):
     def __init__(self):
         pass
 
@@ -54,7 +54,7 @@ class KerasCNNModel(BaseModel):
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.hdf5')
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.00005, patience=7, verbose=1, mode='max')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.00005, patience=30, verbose=1, mode='max')
             chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
@@ -67,7 +67,7 @@ class KerasCNNModel(BaseModel):
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
-                hidden_layer_size=512,
+                hidden_layer_size=1024,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
@@ -83,7 +83,6 @@ class KerasCNNModel(BaseModel):
         
         if X_train.shape[2] > 4:
             self.use_generator = False
-
         
         if self.use_generator:
             self.train_datagen.fit(X_train)
@@ -110,6 +109,7 @@ class KerasCNNModel(BaseModel):
         '''
         
         return self.model.predict(X_test)
+
 
 
     def _create_datagens(self):
@@ -168,7 +168,15 @@ class KerasCNNModel(BaseModel):
         model.add(BatchNormalization())
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(dropout1))
+        model.add(Dropout(dropout2))
+        model.add(BatchNormalization())
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(dropout2))
+        model.add(BatchNormalization())
+        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(dropout2))
         model.add(BatchNormalization())
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
