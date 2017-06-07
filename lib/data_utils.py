@@ -6,6 +6,7 @@ import click
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import StratifiedShuffleSplit
 from glob import glob
 from skimage import io, transform, img_as_ubyte, filters, color
 from skimage.feature import greycomatrix, local_binary_pattern
@@ -197,16 +198,14 @@ class DataManager:
     def load_images_mmap(self, validation_split=0.2):
         assert validation_split > 0.0
         
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=validation_split, random_state=42)
+		train_imgs, valid_imgs = list(sss.split(dm.labels, dm.labels))[0]
+        
         num_test_imgs  = len(self.test_img_names)
-        orig_num_train_imgs = len(self.train_img_names)
-        num_valid_imgs = int(orig_num_train_imgs * validation_split)
-        num_train_imgs = orig_num_train_imgs - num_valid_imgs
+        num_train_imgs = len(train_imgs)
+        num_valid_imgs = len(valid_imgs)
         
         print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs, num_valid_imgs, num_test_imgs))
-
-        train_imgs = np.arange(0, orig_num_train_imgs)
-        valid_imgs = np.random.choice(train_imgs, num_valid_imgs, replace=False)
-        train_imgs = np.setdiff1d(train_imgs, valid_imgs)
         
         if not os.path.exists(self.X_train_mmap_file):
             self.files_to_mmap(list(np.array(self.train_img_names)[train_imgs]), self.X_train_mmap_file)

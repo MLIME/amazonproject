@@ -79,7 +79,7 @@ class KerasOneVsAllModel(BaseModel):
         self.timestamp = get_timestamp()
 
         if saved_model_name:
-        	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
+            self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
         else:
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
@@ -145,7 +145,7 @@ class KerasOneVsAllModel(BaseModel):
                 dropout1=0.2,
                 dropout2=0.5)
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=20, verbose=1, mode='max')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.001, patience=1, verbose=1, mode='max')
 
             label_names = '_'.join(self.label_groups[i])
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_' + label_names + '_chkpt_weights.hdf5')
@@ -183,7 +183,7 @@ class KerasOneVsAllModel(BaseModel):
         y_pred = np.zeros((test_len,1)).astype('uint8')
 
         for i in range(len(self.label_groups)):
-            y_pred = np.hstack((y_pred, (1-np.argmax(self.models[i].predict(X_test))).reshape((test_len, 1))))
+            y_pred = np.hstack((y_pred, (1-np.argmax(self.models[i].predict(X_test), axis=1).reshape(test_len, 1))))
 
 
         new_cols = np.hstack(([np.where(self.result_cols == i) for i in np.arange(len(self.result_cols))])).squeeze()
@@ -261,6 +261,6 @@ class KerasOneVsAllModel(BaseModel):
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(num_categories, activation='softmax'))
 
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=[f2_score, 'accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=[f2_score])
     
         return model

@@ -49,7 +49,7 @@ class KerasCNNModel(BaseModel):
         channels = args.get('channels', 3)
         
         if saved_model_name:
-        	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
+            self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
         else:
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.hdf5')
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
@@ -67,8 +67,8 @@ class KerasCNNModel(BaseModel):
                 optimizer='nadam',
                 init='he_normal', 
                 window_size=7,
-                hidden_layer_size=512,
-                activation='relu', 
+                hidden_layer_size=1024,
+                activation='elu', 
                 dropout1=0.2,
                 dropout2=0.5)
 
@@ -123,12 +123,12 @@ class KerasCNNModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=10,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
+            rotation_range=50,
+            width_shift_range=0.5,
+            height_shift_range=0.5,
             horizontal_flip=True,
             vertical_flip=True,
-            shear_range=0.0,
+            shear_range=0.3,
             zoom_range=0.3,
             fill_mode='nearest')
 
@@ -138,12 +138,12 @@ class KerasCNNModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=10,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
+            rotation_range=50,
+            width_shift_range=0.5,
+            height_shift_range=0.5,
             horizontal_flip=True,
             vertical_flip=True,
-            shear_range=0.0,
+            shear_range=0.3,
             zoom_range=0.3,
             fill_mode='nearest')
 
@@ -181,6 +181,6 @@ class KerasCNNModel(BaseModel):
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(num_categories, activation='sigmoid'))
 
-        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score])
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score, 'mean_absolute_error'])
     
         return model
