@@ -9,6 +9,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.models import Sequential
 from keras.models import load_model
 from keras import backend as K
+from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
 from keras_metrics import KerasMetrics
 from base_model import BaseModel
@@ -95,8 +96,8 @@ class KerasOneVsAllModel(BaseModel):
             self.train_rows[label] = np.where(y_train[:, self.label_indexes[label]] == 1)[0]
             self.valid_rows[label] = np.where(y_valid[:, self.label_indexes[label]] == 1)[0]
 
-            self.train_rows[label] = np.hstack((self.train_rows[label], np.random.choice(np.where(y_train[:, self.label_indexes[label]] == 0)[0], len(self.train_rows[label]))))
-            self.valid_rows[label] = np.hstack((self.valid_rows[label], np.random.choice(np.where(y_valid[:, self.label_indexes[label]] == 0)[0], len(self.valid_rows[label]))))
+            self.train_rows[label] = np.hstack((self.train_rows[label], np.where(y_train[:, self.label_indexes[label]] == 0)[0]))
+            self.valid_rows[label] = np.hstack((self.valid_rows[label], np.where(y_valid[:, self.label_indexes[label]] == 0)[0]))
 
 
         for group, labels in self.label_groups.items():
@@ -128,8 +129,11 @@ class KerasOneVsAllModel(BaseModel):
             new_X_valid = X_valid[valid_rows, :]
             new_y_valid = y_valid[valid_rows, :][:, cols]
 
+            new_y_train = to_categorical(new_y_train)
+            new_y_valid = to_categorical(new_y_valid)
+
             model = self._create_model(
-                num_categories=len(cols),
+                num_categories=2,
                 f2_score=self.metrics.f2_score, 
                 image_base_size=self.image_base_size,
                 channels=new_X_train.shape[3],
@@ -141,10 +145,10 @@ class KerasOneVsAllModel(BaseModel):
                 dropout1=0.2,
                 dropout2=0.5)
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.001, patience=2, verbose=1, mode='auto')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=20, verbose=1, mode='max')
 
             label_names = '_'.join(self.label_groups[i])
-            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_' + label_names + '_chkpt_weights.{epoch:02d}-{val_f2_score:.2f}.hdf5')
+            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_' + label_names + '_chkpt_weights.hdf5')
             chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
@@ -174,10 +178,12 @@ class KerasOneVsAllModel(BaseModel):
         '''
         Predicts labels using a fitted model
         '''
-        y_pred = np.zeros((len(X_test),1)).astype('uint8')
+        test_len = len(X_test)
+        
+        y_pred = np.zeros((test_len,1)).astype('uint8')
 
         for i in range(len(self.label_groups)):
-            y_pred = np.hstack((y_pred, self.models[i].predict(X_test)))
+            y_pred = np.hstack((y_pred, (1-np.argmax(self.models[i].predict(X_test))).reshape((test_len, 1))))
 
 
         new_cols = np.hstack(([np.where(self.result_cols == i) for i in np.arange(len(self.result_cols))])).squeeze()
@@ -255,6 +261,6 @@ class KerasOneVsAllModel(BaseModel):
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(num_categories, activation='softmax'))
 
-        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score])
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=[f2_score, 'accuracy'])
     
         return model
