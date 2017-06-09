@@ -112,7 +112,7 @@ dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type,
 
 dm.load_labels()
 dm.load_file_list()
-dm.load_images_mmap()
+dm.load_images_mmap(0.05)
 
 if datagen_only:
     exit(0)
@@ -122,6 +122,9 @@ arg_dict['channels'] = dm.output_channels
 
 model.initialize(dm.num_categories, arg_dict)
 model.fit(dm.data['X_train'], dm.data['y_train'], dm.data['X_valid'], dm.data['y_valid'])
+
+y_pred_train = model.predict(dm.data['X_train'])
+dm.save_preds_to_matrix(y_pred_train, 'train_preds')
 
 y_pred = model.predict(dm.data['X_test'])
 dm.save_submission_file(y_pred)

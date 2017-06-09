@@ -93,12 +93,33 @@ class KerasOneVsAllModel(BaseModel):
         '''
         for label in self.label_names:
             self.label_indexes[label] = np.where(self.label_names == label)[0][0]
-            self.train_rows[label] = np.where(y_train[:, self.label_indexes[label]] == 1)[0]
-            self.valid_rows[label] = np.where(y_valid[:, self.label_indexes[label]] == 1)[0]
 
-            self.train_rows[label] = np.hstack((self.train_rows[label], np.where(y_train[:, self.label_indexes[label]] == 0)[0]))
-            self.valid_rows[label] = np.hstack((self.valid_rows[label], np.where(y_valid[:, self.label_indexes[label]] == 0)[0]))
+            train_pos_samples = np.where(y_train[:, self.label_indexes[label]] == 1)[0]
+            train_neg_samples = np.where(y_train[:, self.label_indexes[label]] == 0)[0]
 
+            valid_pos_samples = np.where(y_valid[:, self.label_indexes[label]] == 1)[0]
+            valid_neg_samples = np.where(y_valid[:, self.label_indexes[label]] == 0)[0]
+
+            if len(train_pos_samples) > 2*len(train_neg_samples):
+                train_pos_samples = np.random.choice(train_pos_samples, len(train_neg_samples), replace=False)
+            elif 2*len(train_pos_samples) < len(train_neg_samples):
+                train_neg_samples = np.random.choice(train_neg_samples, len(train_pos_samples), replace=False)
+
+            if len(valid_pos_samples) > 2*len(valid_neg_samples):
+                valid_pos_samples = np.random.choice(valid_pos_samples, len(valid_neg_samples), replace=False)
+            elif 2*len(valid_pos_samples) < len(valid_neg_samples):
+                valid_neg_samples = np.random.choice(valid_neg_samples, len(valid_pos_samples), replace=False)
+
+            self.train_rows[label] = train_pos_samples
+            self.valid_rows[label] = valid_pos_samples
+
+            self.train_rows[label] = np.hstack((self.train_rows[label], train_neg_samples))
+            self.valid_rows[label] = np.hstack((self.valid_rows[label], valid_neg_samples))
+            
+            print('Label %s - %d train pos samples, %d train neg samples, %d valid pos samples, %d valid neg samples' % 
+                (label, len(train_pos_samples), len(train_neg_samples), 
+                len(valid_pos_samples), len(valid_neg_samples)))
+            
 
         for group, labels in self.label_groups.items():
             train_rows = np.empty(0).astype('uint8')
@@ -145,7 +166,7 @@ class KerasOneVsAllModel(BaseModel):
                 dropout1=0.2,
                 dropout2=0.5)
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.001, patience=1, verbose=1, mode='max')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=10, verbose=1, mode='max')
 
             label_names = '_'.join(self.label_groups[i])
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_' + label_names + '_chkpt_weights.hdf5')
@@ -201,13 +222,13 @@ class KerasOneVsAllModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=10,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
+            rotation_range=90,
+            width_shift_range=0.5,
+            height_shift_range=0.5,
             horizontal_flip=True,
             vertical_flip=True,
             shear_range=0.0,
-            zoom_range=0.1,
+            zoom_range=0.5,
             fill_mode='nearest')
 
         self.valid_datagen = ImageDataGenerator(
@@ -216,13 +237,13 @@ class KerasOneVsAllModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=10,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
+            rotation_range=90,
+            width_shift_range=0.5,
+            height_shift_range=0.5,
             horizontal_flip=True,
             vertical_flip=True,
             shear_range=0.0,
-            zoom_range=0.1,
+            zoom_range=0.5,
             fill_mode='nearest')
 
 

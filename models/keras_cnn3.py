@@ -67,7 +67,7 @@ class KerasCNNModel3(BaseModel):
                 optimizer='adam',
                 init='he_normal', 
                 window_size=3,
-                hidden_layer_size=128,
+                hidden_layer_size=4096,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
@@ -123,7 +123,7 @@ class KerasCNNModel3(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=20,
+            rotation_range=90,
             width_shift_range=0.5,
             height_shift_range=0.5,
             horizontal_flip=True,
@@ -138,7 +138,7 @@ class KerasCNNModel3(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=20,
+            rotation_range=90,
             width_shift_range=0.5,
             height_shift_range=0.5,
             horizontal_flip=True,
@@ -156,22 +156,23 @@ class KerasCNNModel3(BaseModel):
         model = Sequential()
 
         model.add(BatchNormalization(input_shape=(image_base_size, image_base_size, channels)))
-        model.add(Conv2D(32, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(32, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(32, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(32, (window_size, window_size), padding='same', activation=activation))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Conv2D(128, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(128, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(256, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(256, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(384, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(384, (window_size, window_size), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Conv2D(128, (window_size, window_size), padding='same', activation=activation))
         model.add(Conv2D(128, (window_size, window_size), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(BatchNormalization())
         model.add(Flatten())
-        model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))

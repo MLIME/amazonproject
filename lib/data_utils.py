@@ -199,7 +199,7 @@ class DataManager:
         assert validation_split > 0.0
         
         sss = StratifiedShuffleSplit(n_splits=1, test_size=validation_split, random_state=42)
-		train_imgs, valid_imgs = list(sss.split(dm.labels, dm.labels))[0]
+        train_imgs, valid_imgs = list(sss.split(self.labels, self.labels))[0]
         
         num_test_imgs  = len(self.test_img_names)
         num_train_imgs = len(train_imgs)
@@ -265,8 +265,10 @@ class DataManager:
     
     
     def get_labels(self, y):
-        y[y >= 0.5] = 1
-        y[y < 0.5] = 0
+#        y[y >= 0.5] = 1
+#        y[y < 0.5] = 0
+        thresholds = [0.9, 0.8, 0.9, 0.8, 0.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9]
+        y = (y > thresholds).astype('uint8')
         return np.array(self.vec.inverse_transform(y))
 
     
@@ -287,4 +289,9 @@ class DataManager:
         submission_data = pd.read_csv(sub_file_name)
         submission_data = submission_data.sort_values('id').drop('id', 1)
         submission_data.to_csv(sub_file_name, index=False)
+
+
+    def save_preds_to_matrix(self, y_pred, file_name):
+        pred_file_name = os.path.join(self.base_dir, self.timestamp + '_' + file_name + '.npy')
+        np.save(pred_file_name, y_pred)
 

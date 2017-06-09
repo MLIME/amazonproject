@@ -15,7 +15,7 @@ from base_model import BaseModel
 from utils import get_timestamp
 
 
-class KerasCNNModel2(BaseModel):
+class KerasCNNModel4(BaseModel):
     def __init__(self):
         pass
 
@@ -49,12 +49,12 @@ class KerasCNNModel2(BaseModel):
         channels = args.get('channels', 3)
         
         if saved_model_name:
-        	self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
+            self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
         else:
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.hdf5')
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.00005, patience=50, verbose=1, mode='max')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.00005, patience=30, verbose=1, mode='max')
             chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
@@ -64,10 +64,10 @@ class KerasCNNModel2(BaseModel):
                 f2_score=metrics.f2_score, 
                 image_base_size=image_base_size,
                 channels=channels,
-                optimizer='nadam',
+                optimizer='adam',
                 init='he_normal', 
                 window_size=3,
-                hidden_layer_size=256,
+                hidden_layer_size=4096,
                 activation='relu', 
                 dropout1=0.2,
                 dropout2=0.5)
@@ -83,6 +83,7 @@ class KerasCNNModel2(BaseModel):
         
         if X_train.shape[2] > 4:
             self.use_generator = False
+
         
         if self.use_generator:
             self.train_datagen.fit(X_train)
@@ -92,7 +93,7 @@ class KerasCNNModel2(BaseModel):
                 self.train_datagen.flow(X_train, y_train, batch_size=self.batch_size * 2),
                 steps_per_epoch=(len(X_train) / self.batch_size) * self.image_multiplier,
                 epochs=self.num_epochs,
-                validation_data=self.train_datagen.flow(X_valid, y_valid, batch_size=self.batch_size * 2),
+                validation_data=(X_valid, y_valid),
                 validation_steps=len(X_valid) / self.batch_size,
                 verbose=1, callbacks=self.callbacks)
         else:
@@ -109,7 +110,6 @@ class KerasCNNModel2(BaseModel):
         '''
         
         return self.model.predict(X_test)
-
 
 
     def _create_datagens(self):
@@ -156,24 +156,20 @@ class KerasCNNModel2(BaseModel):
         model = Sequential()
 
         model.add(BatchNormalization(input_shape=(image_base_size, image_base_size, channels)))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
+        model.add(Conv2D(96, (11, 11), padding='same', activation=activation))
+        model.add(Conv2D(96, (11, 11), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(256, (5, 5), padding='same', activation=activation))
+        model.add(Conv2D(256, (5, 5), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(384, (3, 3), padding='same', activation=activation))
+        model.add(Conv2D(384, (3, 3), padding='same', activation=activation))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(256, (3, 3), padding='same', activation=activation))
+        model.add(Conv2D(256, (3, 3), padding='same', activation=activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(BatchNormalization())
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(BatchNormalization())
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
-        model.add(Conv2D(64, (window_size, window_size), padding='same', activation=activation))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(hidden_layer_size, activation=activation))
-        model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(num_categories, activation='sigmoid'))
