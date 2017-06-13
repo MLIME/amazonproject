@@ -205,13 +205,20 @@ class DataManager:
         num_train_imgs = len(train_imgs)
         num_valid_imgs = len(valid_imgs)
         
+        self.X_train_mmap_file = os.path.join(self.base_dir, str(validation_split) + '_' + os.path.basename(self.X_train_mmap_file))
+        self.X_test_mmap_file = os.path.join(self.base_dir, str(validation_split) + '_' + os.path.basename(self.X_test_mmap_file))
+        self.X_valid_mmap_file = os.path.join(self.base_dir, str(validation_split) + '_' + os.path.basename(self.X_valid_mmap_file))
+    
+        self.y_train_file = os.path.join(self.base_dir, str(validation_split) + '_' + os.path.basename(self.y_train_file))
+        self.y_valid_file = os.path.join(self.base_dir, str(validation_split) + '_' + os.path.basename(self.y_valid_file))
+
         print('Train: %d, Valid: %d, Test: %d' % (num_train_imgs, num_valid_imgs, num_test_imgs))
         
         if not os.path.exists(self.X_train_mmap_file):
             self.files_to_mmap(list(np.array(self.train_img_names)[train_imgs]), self.X_train_mmap_file)
         
         if not os.path.exists(self.X_valid_mmap_file):
-            self.files_to_mmap(list(np.array(self.train_img_names)[valid_imgs]), self.X_valid_mmap_file)           
+            self.files_to_mmap(list(np.array(self.train_img_names)[valid_imgs]), self.X_valid_mmap_file)
 
         if not os.path.exists(self.X_test_mmap_file):
             self.files_to_mmap(self.test_img_names, self.X_test_mmap_file)
@@ -220,7 +227,7 @@ class DataManager:
             y_train = self.labels[train_imgs]
             np.save(self.y_train_file, y_train)
 
-        if not os.path.exists(self.y_valid_file):           
+        if not os.path.exists(self.y_valid_file):
             y_valid = self.labels[valid_imgs]
             np.save(self.y_valid_file, y_valid)
         

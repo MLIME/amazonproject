@@ -42,6 +42,7 @@ parser.add_argument('--channels', type=int, default=3,  help='image channels (de
 parser.add_argument('--bit_depth', type=int, default=8, help='image bit depth (default: 8)')
 parser.add_argument('--batch_size', type=int, default=4, help='batch size (default: 32)')
 parser.add_argument('--num_epochs', type=int, default=100,  help='epochs (default: 100)')
+parser.add_argument('--valid_split', type=float, default=0.2,  help='validation split (default: 0.2)')
 parser.add_argument('--use_img_gen', type=bool, default=False, help='use image generator (default: False)')
 parser.add_argument('--img_mult', type=int, default=4, help='when using image generator, multiples the training set size (default: 4)')
 parser.add_argument('--apply_sobel', type=bool, default=False, help='apply Sobel transform on grayscale-transformed image (default: False)')
@@ -66,6 +67,7 @@ channels = args.channels
 bit_depth = args.bit_depth
 batch_size = args.batch_size
 num_epochs = args.num_epochs
+valid_split = args.valid_split
 use_generator = args.use_img_gen
 image_multiplier = args.img_mult
 saved_model_file = args.saved_model_file
@@ -87,6 +89,7 @@ arg_dict['channels'] = args.channels
 arg_dict['bit_depth'] = args.bit_depth
 arg_dict['batch_size'] = args.batch_size
 arg_dict['num_epochs'] = args.num_epochs
+arg_dict['valid_split'] = args.valid_split
 arg_dict['use_generator'] = args.use_img_gen
 arg_dict['image_multiplier'] = args.img_mult
 arg_dict['saved_model_file'] = args.saved_model_file
@@ -112,7 +115,7 @@ dm = DataManager(base_dir, model_name, train_dir, test_dir, file_type,
 
 dm.load_labels()
 dm.load_file_list()
-dm.load_images_mmap(0.05)
+dm.load_images_mmap(valid_split)
 
 if datagen_only:
     exit(0)

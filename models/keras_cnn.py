@@ -31,7 +31,7 @@ class KerasCNNModel(BaseModel):
         '''
         Initialize Keras CNN parameters
         '''
-        metrics = KerasMetrics()
+        self.metrics = KerasMetrics()
         num_categories = num_categories
 
         self.backend = args.get('--backend', 'tf')
@@ -49,19 +49,19 @@ class KerasCNNModel(BaseModel):
         channels = args.get('channels', 3)
         
         if saved_model_name:
-            self.model = load_model(saved_model_name, custom_objects={'f2_score': metrics.f2_score})
+            self.model = load_model(saved_model_name, custom_objects={'f2_score': self.metrics.f2_score})
         else:
-            chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.hdf5')
+            self.chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_chkpt_weights.hdf5')
             model_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ +  '_final_model.h5')
 
             stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.00005, patience=7, verbose=1, mode='max')
-            chkpt = ModelCheckpoint(chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
+            chkpt = ModelCheckpoint(self.chkpt_file_name, monitor='val_f2_score', verbose=1, save_best_only=True, save_weights_only=False, mode='max', period=1)
 
             self.callbacks = [stopper, chkpt]
 
             self.model = self._create_model(
                 num_categories=num_categories,
-                f2_score=metrics.f2_score, 
+                f2_score=self.metrics.f2_score, 
                 image_base_size=image_base_size,
                 channels=channels,
                 optimizer='nadam',
@@ -84,7 +84,6 @@ class KerasCNNModel(BaseModel):
         if X_train.shape[2] > 4:
             self.use_generator = False
 
-        
         if self.use_generator:
             self.train_datagen.fit(X_train)
             self.valid_datagen.fit(X_valid)
@@ -102,6 +101,8 @@ class KerasCNNModel(BaseModel):
                 epochs=self.num_epochs,
                 validation_data=(X_valid, y_valid),
                 verbose=1, callbacks=self.callbacks)
+
+        self.model = load_model(self.chkpt_file_name, custom_objects={'f2_score': self.metrics.f2_score})
 
 
     def predict(self, X_test):

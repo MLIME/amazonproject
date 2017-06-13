@@ -166,7 +166,7 @@ class KerasOneVsAllModel(BaseModel):
                 dropout1=0.2,
                 dropout2=0.5)
 
-            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=10, verbose=1, mode='max')
+            stopper = EarlyStopping(monitor='val_f2_score', min_delta=0.0001, patience=20, verbose=1, mode='max')
 
             label_names = '_'.join(self.label_groups[i])
             chkpt_file_name = os.path.join(self.base_dir, self.timestamp + '_' + self.__class__.__name__ + '_' + label_names + '_chkpt_weights.hdf5')
@@ -182,7 +182,7 @@ class KerasOneVsAllModel(BaseModel):
                     self.train_datagen.flow(new_X_train, new_y_train, batch_size=self.batch_size * 2),
                     steps_per_epoch=(len(new_X_train) / self.batch_size) * self.image_multiplier,
                     epochs=self.num_epochs,
-                    validation_data=self.train_datagen.flow(new_X_valid, new_y_valid, batch_size=self.batch_size * 2),
+                    validation_data=self.valid_datagen.flow(new_X_valid, new_y_valid, batch_size=self.batch_size * 2),
                     validation_steps=len(new_X_valid) / self.batch_size,
                     verbose=1, callbacks=self.callbacks)
             else:
@@ -192,7 +192,8 @@ class KerasOneVsAllModel(BaseModel):
                     validation_data=(new_X_valid, new_y_valid),
                     verbose=1, callbacks=self.callbacks)
 
-            self.models.append(model)
+            m = load_model(chkpt_file_name, custom_objects={'f2_score': self.metrics.f2_score})
+            self.models.append(m)
 
 
     def predict(self, X_test):
@@ -204,7 +205,7 @@ class KerasOneVsAllModel(BaseModel):
         y_pred = np.zeros((test_len,1)).astype('uint8')
 
         for i in range(len(self.label_groups)):
-            y_pred = np.hstack((y_pred, (1-np.argmax(self.models[i].predict(X_test), axis=1).reshape(test_len, 1))))
+            y_pred = np.hstack((y_pred, self.models[i].predict(X_test)[:,1].reshape(test_len, 1)))
 
 
         new_cols = np.hstack(([np.where(self.result_cols == i) for i in np.arange(len(self.result_cols))])).squeeze()
@@ -222,7 +223,7 @@ class KerasOneVsAllModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=90,
+            rotation_range=180,
             width_shift_range=0.5,
             height_shift_range=0.5,
             horizontal_flip=True,
@@ -237,7 +238,7 @@ class KerasOneVsAllModel(BaseModel):
             featurewise_std_normalization=False,
             samplewise_std_normalization=False,
             zca_whitening=False,
-            rotation_range=90,
+            rotation_range=180,
             width_shift_range=0.5,
             height_shift_range=0.5,
             horizontal_flip=True,
