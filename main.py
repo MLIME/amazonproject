@@ -126,8 +126,13 @@ arg_dict['channels'] = dm.output_channels
 model.initialize(dm.num_categories, arg_dict)
 model.fit(dm.data['X_train'], dm.data['y_train'], dm.data['X_valid'], dm.data['y_valid'])
 
+print('Predict on training data')
 y_pred_train = model.predict(dm.data['X_train'])
+print('Save training data predictions')
 dm.save_preds_to_matrix(y_pred_train, 'train_preds')
 
+print('Predict on test data')
 y_pred = model.predict(dm.data['X_test'])
+
+print('Save submission file')
 dm.save_submission_file(y_pred)

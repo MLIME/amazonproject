@@ -182,6 +182,6 @@ class KerasCNNModel(BaseModel):
         model.add(Dense(hidden_layer_size, activation=activation))
         model.add(Dense(num_categories, activation='sigmoid'))
 
-        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score, 'mean_absolute_error'])
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=[f2_score])
     
         return model
